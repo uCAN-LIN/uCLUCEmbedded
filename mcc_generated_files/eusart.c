@@ -80,8 +80,8 @@ void EUSART_Initialize(void)
 
     // Set the EUSART module to the options selected in the user interface.
 
-    // SCKP Non-Inverted; BRG16 16bit_generator; WUE disabled; ABDEN disabled; 
-    BAUDCON = 0x08;
+    // SCKP Non-Inverted; BRG16 16bit_generator; WUE disabled; ABDEN enabled; 
+    BAUDCON = 0x09;
 
     // SPEN enabled; RX9 8-bit; CREN disabled; ADDEN disabled; SREN disabled; 
     RCSTA = 0x80;

@@ -54,10 +54,6 @@ void processLIN(void){
     switch(cmd){
         case UNLOCK:
             break;
-        case RSSI:
-            break;
-        case LFRX:
-            break;
         default:
             break;
     }
