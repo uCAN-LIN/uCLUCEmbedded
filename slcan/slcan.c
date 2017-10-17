@@ -9,6 +9,9 @@
 #include "string.h"
 #include "slcan.h"
 #include "./../mcc_generated_files/LINDrivers/lin_slave.h"
+#include "./../mcc_generated_files/mcc.h"
+#include "./../mcc_generated_files/LINDrivers/lin_hardware.h"
+
 
 
 #define LINE_MAXLEN 100
@@ -75,18 +78,17 @@ uint32_t dataToSend = 0;
 
 void slcanClose()
 {
-
 	dataToSend = 0;
-//            	todo into slleep
 	state = STATE_CONFIG;
 }
 
 static void slcanOutputFlush(void)
 {
-
-//    while (((USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData)->TxState){;} //should change by hardware
-//    while (CDC_Transmit_FS(sl_frame, sl_frame_len) != USBD_OK);
-//	sl_frame_len = 0;
+    while(!USBUSARTIsTxTrfReady()) //TODO to jest ?le !
+    {
+        putUSBUSART(sl_frame,sl_frame_len);
+        sl_frame_len = 0;
+    }
 }
 
 /**
@@ -144,43 +146,36 @@ static uint8_t parseHex(uint8_t* line, uint8_t len, uint32_t* value) {
  */
 static uint8_t transmitStd(uint8_t* line) {
     uint32_t temp;
-    uint8_t idlen;
-//    HAL_StatusTypeDef tr;
-//
-//    hcan.pTxMsg->RTR = ((line[0] == 'r') || (line[0] == 'R'));
-//
-//    // upper case -> extended identifier
-//    if (line[0] < 'Z') {
-//    	idlen = 8;
-//        if (!parseHex(&line[1], idlen, &temp)) return 0;
-//        hcan.pTxMsg->IDE = CAN_ID_EXT;
-//        hcan.pTxMsg->ExtId = temp;
-//
-//    } else {
-//    	idlen = 3;
-//    	if (!parseHex(&line[1], idlen, &temp)) return 0;
-//		hcan.pTxMsg->IDE = CAN_ID_STD;
-//		hcan.pTxMsg->StdId = temp;
-//    }
-//
-//
-//    if (!parseHex(&line[1 + idlen], 1, &temp)) return 0;
-//    hcan.pTxMsg->DLC = temp;
-//
-//    if (!hcan.pTxMsg->RTR) {
-//    	uint8_t i;
-//        uint8_t length = hcan.pTxMsg->DLC;
-//        if (length > 8) length = 8;
-//        for (i = 0; i < length; i++) {
-//            if (!parseHex(&line[idlen + 2 + i*2], 2, &temp)) return 0;
-//            hcan.pTxMsg->Data[i] = temp;
-//        }
-//    }
-//
-//    HAL_NVIC_DisableIRQ(CEC_CAN_IRQn);
-//    tr = HAL_CAN_Transmit(&hcan, 1000);
-//    HAL_NVIC_EnableIRQ(CEC_CAN_IRQn);
-//    return tr;
+    lin_packet_t pck = {0};
+    
+    // id
+    if (!parseHex(&line[1], 2, &temp)) return 0;
+    pck.PID = temp;
+    // type
+    if (!parseHex(&line[3], 1, &temp)) return 0;
+    pck.type = temp;
+    // len
+    if (!parseHex(&line[4], 1, &temp)) return 0;
+    pck.length = temp;
+    
+    if (pck.length > 8) return 0;
+
+    uint8_t i;
+    for (i = 0; i < pck.length; i++) {
+        if (!parseHex(&line[5 + i*2], 2, &temp)) return 0;
+        pck.data[i] = temp;
+    }
+    
+    //Add Checksum
+    pck.checksum = LIN_getChecksum(pck.length, pck.data);
+  // check lin master  
+    LIN_EUSART_Write(pck.PID[i]);
+    for(uint8_t i = 0; i < pck.length; i++){
+        LIN_EUSART_Write(pck.data[i]);
+    }
+    LIN_EUSART_Write(pck.checksum);
+    
+    return 1;
 }
 
 
@@ -208,16 +203,14 @@ void slCanCheckCommand()
     		result = terminator;
     		break;
     	}
-        case 'S': // Setup with standard CAN bitrates
-        case 'G': // Read given MCP2515 register
+        case 'S': 
+        case 'G': 
         case 'W':
+        case 's': 
 			result = terminator;
-			break;
-        case 's': // Setup with user defined timing settings for CNF1/CNF2/CNF3
             break;
         case 'V': // Get hardware version
             {
-
                 slcanSetOutputChar('V');
                 slcanSetOutputAsHex(VERSION_HARDWARE_MAJOR);
                 slcanSetOutputAsHex(VERSION_HARDWARE_MINOR);
@@ -226,7 +219,6 @@ void slCanCheckCommand()
             break;
         case 'v': // Get firmware version
             {
-
                 slcanSetOutputChar('v');
                 slcanSetOutputAsHex(VERSION_FIRMWARE_MAJOR);
                 slcanSetOutputAsHex(VERSION_FIRMWARE_MINOR);
