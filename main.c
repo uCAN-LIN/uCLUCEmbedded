@@ -85,9 +85,7 @@ void main(void)
             numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
             if(numBytes > 0)
             {
-                //we received numBytes bytes of data and they are copied into
-                //  the "buffer" variable.  We can do something with the data
-                //  here.
+
             }
         }
         

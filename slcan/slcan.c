@@ -9,12 +9,13 @@
 #include "string.h"
 #include "slcan.h"
 #include "./../mcc_generated_files/LINDrivers/lin_slave.h"
+#include "./../mcc_generated_files/LINDrivers/lin_master.h"
 #include "./../mcc_generated_files/mcc.h"
 #include "./../mcc_generated_files/LINDrivers/lin_hardware.h"
 
 
 
-#define LINE_MAXLEN 100
+#define LINE_MAXLEN 50
 #define SLCAN_BELL 7
 #define SLCAN_CR 13
 #define SLCAN_LR 10
@@ -26,7 +27,7 @@
 #define HAL_OK 1
 
 
-extern volatile int32_t serialNumber;
+volatile int32_t serialNumber;
 // internal slcan_interface state
 static uint8_t state = STATE_CONFIG;
 static uint8_t timestamping = 0;
@@ -139,6 +140,24 @@ static uint8_t parseHex(uint8_t* line, uint8_t len, uint32_t* value) {
     return 1;
 }
 
+void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master){
+    //Build Packet - LIN required data
+    //Add Break
+    LIN_sendBreak();
+    LIN_EUSART_Write(0x00); //send dummy transmission
+    //Add Preamble
+    LIN_EUSART_Write(0x55);
+    //Add ID
+    LIN_EUSART_Write(LIN_packet_master.PID);
+    //Build Packet - User defined data
+    //add data
+    for(uint8_t i = 0; i < LIN_packet_master.length; i++){
+        LIN_EUSART_Write(LIN_packet_master.data[i]);
+    }
+    //Add Checksum
+    LIN_EUSART_Write(LIN_packet_master.checksum);
+}
+
 /**
  * @brief  Interprets given line and transmit can message
  * @param  line Line string which contains the transmit command
@@ -146,14 +165,15 @@ static uint8_t parseHex(uint8_t* line, uint8_t len, uint32_t* value) {
  */
 static uint8_t transmitStd(uint8_t* line) {
     uint32_t temp;
-    lin_packet_t pck = {0};
+    lin_packet_t pck;
     
     // id
     if (!parseHex(&line[1], 2, &temp)) return 0;
-    pck.PID = temp;
+    pck.PID = LIN_calcParity(temp); // add parity
     // type
     if (!parseHex(&line[3], 1, &temp)) return 0;
-    pck.type = temp;
+    //pck.type = temp;
+    pck.type = TRANSMIT;
     // len
     if (!parseHex(&line[4], 1, &temp)) return 0;
     pck.length = temp;
@@ -165,15 +185,12 @@ static uint8_t transmitStd(uint8_t* line) {
         if (!parseHex(&line[5 + i*2], 2, &temp)) return 0;
         pck.data[i] = temp;
     }
-    
     //Add Checksum
     pck.checksum = LIN_getChecksum(pck.length, pck.data);
-  // check lin master  
-    LIN_EUSART_Write(pck.PID[i]);
-    for(uint8_t i = 0; i < pck.length; i++){
-        LIN_EUSART_Write(pck.data[i]);
-    }
-    LIN_EUSART_Write(pck.checksum);
+  
+    LIN_disableRx();  
+    LIN_sendHeaderPacket(pck);
+    LIN_enableRx();
     
     return 1;
 }
