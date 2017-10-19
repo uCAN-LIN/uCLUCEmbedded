@@ -71,7 +71,6 @@ volatile uint8_t eusartRxCount;
 /**
   Section: EUSART APIs
 */
-
 void EUSART_Initialize(void)
 {
     // disable interrupts before changing states
@@ -82,13 +81,12 @@ void EUSART_Initialize(void)
 
     // SCKP Non-Inverted; BRG16 16bit_generator; WUE disabled; ABDEN enabled; 
     BAUDCON = 0x09;
-
-    // SPEN enabled; RX9 8-bit; CREN disabled; ADDEN disabled; SREN disabled; 
-    RCSTA = 0x80;
-
-    // TX9 8-bit; TX9D 0; SENDB sync_break_complete; TXEN disabled; SYNC asynchronous; BRGH hi_speed; CSRC slave; 
-    TXSTA = 0x04;
-
+    
+    // SPEN enabled; RX9 8-bit; CREN enabled; ADDEN disabled; SREN disabled;
+    RCSTA = 0x90;
+    // TX9 8-bit; TX9D 0; SENDB sync_break_complete; TXEN enabled; SYNC asynchronous; BRGH hi_speed; CSRC slave;
+    TXSTA = 0x24;
+    
     // Baud Rate = 9600; SPBRGL 225; 
     SPBRGL = 0xE1;
 
@@ -112,8 +110,9 @@ void EUSART_Initialize(void)
 uint8_t EUSART_Read(void)
 {
     uint8_t readValue  = 0;
-    RCSTAbits.CREN = 1;	
-    
+
+    // RCSTAbits.CREN = 1; //ll was in the lin_slave classic checksum
+
     while(0 == eusartRxCount)
     {
     }

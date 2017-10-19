@@ -186,7 +186,7 @@ static uint8_t transmitStd(uint8_t* line) {
         pck.data[i] = temp;
     }
     //Add Checksum
-    pck.checksum = LIN_getChecksum(pck.length, pck.data);
+    pck.checksum = LIN_getChecksum(pck.length,pck.PID, pck.data);
   
     LIN_disableRx();  
     LIN_sendHeaderPacket(pck);

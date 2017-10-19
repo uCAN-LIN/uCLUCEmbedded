@@ -91,7 +91,7 @@ void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data){
         }
 
         //Add Checksum
-        LIN_packet.checksum = LIN_getChecksum(LIN_packet.length, LIN_packet.data);
+        LIN_packet.checksum = LIN_getChecksum(LIN_packet.length,LIN_packet.PID, LIN_packet.data);
 
     } else { //Rx packet
         LIN_rxPacket.rxLength = tempSchedule->length; //data length for rx data processing
@@ -168,7 +168,7 @@ bool LIN_receivePacket(void){
     } else {
         rxIndex = 0;
         //calculate checksum
-        if(LIN_EUSART_Read() == LIN_getChecksum(LIN_rxPacket.rxLength, LIN_rxPacket.data))
+        if(LIN_EUSART_Read() == LIN_getChecksum(LIN_rxPacket.rxLength, LIN_rxPacket.cmd, LIN_rxPacket.data))
             return true;
             
     }

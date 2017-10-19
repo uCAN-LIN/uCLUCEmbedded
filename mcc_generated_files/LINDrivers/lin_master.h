@@ -113,7 +113,7 @@ uint8_t LIN_getPacket(uint8_t* data);
 
 lin_state_t LIN_handler(void);
 
-uint8_t LIN_getChecksum(uint8_t length, uint8_t* data);
+uint8_t LIN_getChecksum(uint8_t length, uint8_t pid, uint8_t* data);
 
 uint8_t LIN_calcParity(uint8_t CMD);
 

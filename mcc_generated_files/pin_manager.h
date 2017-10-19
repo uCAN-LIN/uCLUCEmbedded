@@ -65,6 +65,12 @@
 // get/set RA1 procedures
 #define RA1_GetValue()         PORTAbits.RA1
 
+// get/set RC4 procedures
+#define RC4_SetHigh()    do { LATCbits.LATC4 = 1; } while(0)
+#define RC4_SetLow()   do { LATCbits.LATC4 = 0; } while(0)
+#define RC4_Toggle()   do { LATCbits.LATC4 = ~LATCbits.LATC4; } while(0)
+#define RC4_GetValue()         PORTCbits.RC4
+
 // get/set RC5 procedures
 #define RC5_SetHigh()    do { LATCbits.LATC5 = 1; } while(0)
 #define RC5_SetLow()   do { LATCbits.LATC5 = 0; } while(0)

@@ -48,6 +48,7 @@
 /*
                          Main application
  */
+uint8_t lin_checksum_type = 'c';
 void main(void)
 {
     // initialize the device

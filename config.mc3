@@ -21,12 +21,12 @@
          <string>class com.microchip.mcc.modules.mcu8.lin.slave.LINSlave</string>
       </entry>
       <entry>
-         <string>INTERNAL OSCILLATOR</string>
-         <string>class com.microchip.mcc.mcu8.systemManager.osc.Osc</string>
-      </entry>
-      <entry>
          <string>VendorDevice</string>
          <string>class com.microchip.mcc.modules.mcu16.deviceclass.VendorDevice.VendorDevice</string>
+      </entry>
+      <entry>
+         <string>INTERNAL OSCILLATOR</string>
+         <string>class com.microchip.mcc.mcu8.systemManager.osc.Osc</string>
       </entry>
       <entry>
          <string>USB</string>
@@ -477,7 +477,7 @@
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="LIN Slave" name="checksumSetting"/>
-         <value>Classic</value>
+         <value>Enhanced</value>
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.SettingKey" moduleName="USB" registerAlias="UEP2" settingAlias="EPCONDIS"/>
@@ -1977,7 +1977,7 @@
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="LIN Slave" name="pubSubselectedEusart"/>
-         <value>1594.0762659406328</value>
+         <value>9874.74455565768</value>
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="System Module" name="CLOCK_FREQ"/>
@@ -2128,12 +2128,12 @@
          <value>0</value>
       </entry>
       <entry>
-         <key class="com.microchip.mcc.core.tokenManager.OptionKey" moduleName="USB" registerAlias="UEP7" settingAlias="EPHSHK" alias="Enabled"/>
-         <value>1</value>
-      </entry>
-      <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="CDCDevice" name="AbstractManagementD1"/>
          <value>enabled</value>
+      </entry>
+      <entry>
+         <key class="com.microchip.mcc.core.tokenManager.OptionKey" moduleName="USB" registerAlias="UEP7" settingAlias="EPHSHK" alias="Enabled"/>
+         <value>1</value>
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="CDCDevice" name="AbstractManagementD2"/>
@@ -3217,7 +3217,7 @@
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="LIN Slave" name="pubSubselectedTimer"/>
-         <value>90.18777270777156</value>
+         <value>4623.930887101914</value>
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="Pin Module" name="customNameUserSet RA0"/>
@@ -3371,7 +3371,7 @@
       </entry>
       <entry>
          <file>mcc_generated_files\mcc.h</file>
-         <hash>79bd80d8f6b715f3c98e918b5d267938fc6bd766bfa78d9849270545b1d2aee3</hash>
+         <hash>bcbff2a58ad5dc8f51fc3383daa2c9f4bd453e54288e6928529b37723b6f3b7e</hash>
       </entry>
       <entry>
          <file>mcc_generated_files\usb\usb.h</file>
@@ -3391,7 +3391,7 @@
       </entry>
       <entry>
          <file>mcc_generated_files\usb\usb_device.h</file>
-         <hash>294fbc496c530f618cc1e8ec935045df2f309570e2115e7930211da6eec0f843</hash>
+         <hash>50680839bb8e680a61d42bc87c9727da5f5bf3fcb49e01d11a9678875aad97cd</hash>
       </entry>
       <entry>
          <file>mcc_generated_files\usb\usb_device_local.h</file>
@@ -3403,7 +3403,7 @@
       </entry>
       <entry>
          <file>mcc_generated_files\pin_manager.h</file>
-         <hash>9551b7f98e481fa16aa68f36b666c6a93cd60b97fab2f5d56c6b60fffe4a50df</hash>
+         <hash>56685f3bfa3cdf27cd4c636616e3ac02e8392a7209403a90bdf5f3afc166da9b</hash>
       </entry>
       <entry>
          <file>mcc_generated_files\usb\usb_hal.h</file>
@@ -3411,7 +3411,7 @@
       </entry>
       <entry>
          <file>mcc_generated_files\eusart.c</file>
-         <hash>a2aeff4511df67dd06fd76aa85583cbfed315e4a6c1492362969537d7e8049da</hash>
+         <hash>baddfba8a4cab44df21a4954286856925d2c793f03d9abe04615c2b6518db850</hash>
       </entry>
       <entry>
          <file>mcc_generated_files\tmr0.c</file>
@@ -3423,19 +3423,19 @@
       </entry>
       <entry>
          <file>mcc_generated_files\LINDrivers\lin_slave.h</file>
-         <hash>e97aeb939048c857332c11b8e612dc765178460a80003c34568727a2637a6638</hash>
+         <hash>21d5db6695de2a7458c7d196997263c68c81dd3825792c66225edf99054848e7</hash>
       </entry>
       <entry>
          <file>mcc_generated_files\LINDrivers\lin_hardware.h</file>
          <hash>7e173ea677e16b35e145c09818745fb6ae04c4c5d1a4b3b47728d725d95af027</hash>
       </entry>
       <entry>
-         <file>mcc_generated_files\LINDrivers\lin_slave.c</file>
-         <hash>133acfbb2a7a736ca9e9ff0ce38c8ff50ac21c1d88e2ab3e47d5c446ac606e7f</hash>
-      </entry>
-      <entry>
          <file>mcc_generated_files\interrupt_manager.c</file>
          <hash>3de297dbcbbb82768da3682196c992bc1300d7045ece4855d759ed2ec026372c</hash>
+      </entry>
+      <entry>
+         <file>mcc_generated_files\LINDrivers\lin_slave.c</file>
+         <hash>5245cdf9d576b5af06a5cc66fea394bd5023ea9adde89c451842c171940390d3</hash>
       </entry>
       <entry>
          <file>mcc_generated_files\usb\usb_common.h</file>

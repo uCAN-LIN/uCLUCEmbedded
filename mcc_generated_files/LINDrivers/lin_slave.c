@@ -81,8 +81,8 @@ void LIN_queuePacket(uint8_t cmd){
     memcpy(LIN_packet.data, tempSchedule->data, LIN_packet.length);
     
     //Add Checksum
-    LIN_packet.checksum = LIN_getChecksum(LIN_packet.length, LIN_packet.data);
-    LIN_sendPacket(LIN_packet.length, LIN_packet.data);
+    LIN_packet.checksum = LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data);
+    LIN_sendPacket(LIN_packet.length, LIN_packet.PID, LIN_packet.data);
 
     
 }
@@ -158,7 +158,7 @@ lin_rx_state_t LIN_handler(void){
         case LIN_RX_CHECKSUM:
             if(LIN_EUSART_DataReady > 0){
                 LIN_packet.checksum = LIN_EUSART_Read();
-                if(LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.data)) {
+                if(LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
                     LIN_rxState = LIN_RX_ERROR;
                 }
                 else {
@@ -188,14 +188,14 @@ lin_rx_state_t LIN_handler(void){
     return LIN_rxState;
 }
 
-void LIN_sendPacket(uint8_t length, uint8_t* data){
+void LIN_sendPacket(uint8_t length, uint8_t pid, uint8_t* data){
 
     //Write data    
     for(uint8_t i = 0; i < length; i++){
         LIN_EUSART_Write(*(data + i));
     }
     //Add Checksum
-    LIN_EUSART_Write(LIN_getChecksum(length, data));
+    LIN_EUSART_Write(LIN_getChecksum(length, pid, data));
 }
 
 uint8_t LIN_getPacket(uint8_t* data){
@@ -266,8 +266,14 @@ uint8_t LIN_calcParity(uint8_t CMD){
     return PID.rawPID;
 }
 
-uint8_t LIN_getChecksum(uint8_t length, uint8_t* data){
-    uint16_t checksum = 0;
+uint8_t extern lin_checksum_type;
+
+uint8_t LIN_getChecksum(uint8_t length, uint8_t pid, uint8_t* data){
+    
+    uint16_t checksum = pid;
+    
+    if (lin_checksum_type == 'c')
+        checksum = 0;
     
     for (uint8_t i = 0; i < length; i++){
         checksum = checksum + *data++;

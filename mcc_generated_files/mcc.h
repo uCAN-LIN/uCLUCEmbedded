@@ -51,9 +51,9 @@
 #include <stdbool.h>
 #include "interrupt_manager.h"
 #include "LINDrivers/lin_app.h"
-#include "eusart.h"
-#include "usb/usb.h"
 #include "tmr0.h"
+#include "usb/usb.h"
+#include "eusart.h"
 
 #define _XTAL_FREQ  48000000
 

@@ -105,7 +105,7 @@ void LIN_init(uint8_t tableLength, const lin_rx_cmd_t* const command, void (*pro
 
 void LIN_queuePacket(uint8_t cmd);
 
-void LIN_sendPacket(uint8_t length, uint8_t* data);
+void LIN_sendPacket(uint8_t length, uint8_t pid, uint8_t* data);
 
 uint8_t LIN_getPacket(uint8_t* data);
 
@@ -115,7 +115,7 @@ lin_rx_state_t LIN_handler(void);
 
 bool LIN_checkPID(uint8_t pid);
 
-uint8_t LIN_getChecksum(uint8_t length, uint8_t* data);
+uint8_t LIN_getChecksum(uint8_t length, uint8_t pid, uint8_t* data);
 
 uint8_t LIN_calcParity(uint8_t CMD);
 
