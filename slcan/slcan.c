@@ -15,7 +15,7 @@
 
 
 
-#define LINE_MAXLEN 50
+
 #define SLCAN_BELL 7
 #define SLCAN_CR 13
 #define SLCAN_LR 10

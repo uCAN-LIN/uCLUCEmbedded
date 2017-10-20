@@ -27,6 +27,7 @@
 #define CAN_BR_1M 8
 
 //ex TZ12020506
+#define LINE_MAXLEN 50
 
 void slcanClose();
 

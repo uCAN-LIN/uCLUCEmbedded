@@ -39,6 +39,8 @@
 */
 
 #include "lin_app.h"
+#include "./../../slcan/slcan.h"
+
 
 void LIN_Slave_Initialize(void){
 

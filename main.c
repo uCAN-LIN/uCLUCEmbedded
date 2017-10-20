@@ -44,6 +44,7 @@
 */
 
 #include "mcc_generated_files/mcc.h"
+#include "slcan/slcan.h"
 
 /*
                          Main application
@@ -61,7 +62,7 @@ void main(void)
     INTERRUPT_GlobalInterruptEnable();
 
     // Enable the Peripheral Interrupts
-    //INTERRUPT_PeripheralInterruptEnable();
+    INTERRUPT_PeripheralInterruptEnable();
 
     // Disable the Global Interrupts
     //INTERRUPT_GlobalInterruptDisable();
@@ -72,24 +73,19 @@ void main(void)
     while (1)
     {
         LIN_handler();
-        
-        if(USBUSARTIsTxTrfReady())
         {
-            char data[] = {0x00, 0x01, 0x02, 0x03, 0x04};
-            putUSBUSART(data,5);
-        }
-        
-        {
+            static uint8_t buffer[LINE_MAXLEN];
             uint8_t numBytes;
-            uint8_t buffer[64];
-    
             numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
             if(numBytes > 0)
             {
-
+                for (uint8_t i; i < LINE_MAXLEN; i++)
+                {
+                    slCanProccesInput(buffer[i]);
+                }
+                slCanCheckCommand();
             }
         }
-        
     }
 }
 /**

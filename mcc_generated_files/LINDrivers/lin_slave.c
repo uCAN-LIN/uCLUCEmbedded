@@ -130,19 +130,28 @@ lin_rx_state_t LIN_handler(void){
                 LIN_packet.PID = LIN_EUSART_Read();
 
                 //check LIN Parity bits
-                if(LIN_checkPID(LIN_packet.PID) == false){
-                    LIN_rxState = LIN_RX_ERROR;
-                    break;
-                }
-                LIN_packet.type = LIN_getFromTable(LIN_packet.PID, TYPE);
-                if(LIN_packet.type == RECEIVE){
-                    LIN_packet.length = LIN_getFromTable(LIN_packet.PID, LENGTH);
+                //ll receive all data 
+                // if(LIN_checkPID(LIN_packet.PID) == false){
+                //    LIN_rxState = LIN_RX_ERROR;
+                //    break;
+                //}
+                //LIN_packet.type = LIN_getFromTable(LIN_packet.PID, TYPE);
+                //if(LIN_packet.type == RECEIVE){
+//                    LIN_packet.length = LIN_getFromTable(LIN_packet.PID, LENGTH);
                     LIN_rxState = LIN_RX_DATA;
-                }
-                else{
-                    LIN_disableRx();
-                    LIN_rxState = LIN_RX_TX_DATA;
-                }
+                    LIN_packet.length = 0;
+                    if (LIN_packet.PID =< 0x3f)
+                        LIN_packet.length = 8;
+                    if (LIN_packet.PID =< 0x2f)
+                        LIN_packet.length = 4;
+                    if (LIN_packet.PID =< 0x1f)
+                        LIN_packet.length = 2;
+
+                //}
+                //else{
+                //    LIN_disableRx();
+                //    LIN_rxState = LIN_RX_TX_DATA;
+                //}
             }
             break;
         case LIN_RX_DATA:
@@ -170,6 +179,7 @@ lin_rx_state_t LIN_handler(void){
             LIN_queuePacket(LIN_packet.PID); //Send response automatically
             LIN_rxState = LIN_RX_RDY;
         case LIN_RX_RDY:
+            slcanReciveCanFrame(LIN_packet);
             LIN_processData();
         case LIN_RX_ERROR:
             LIN_stopTimer();
