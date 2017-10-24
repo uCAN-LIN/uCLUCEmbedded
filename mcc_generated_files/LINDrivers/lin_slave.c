@@ -35,10 +35,11 @@
 
     MICROCHIP PROVIDES THIS SOFTWARE CONDITIONALLY UPON YOUR ACCEPTANCE OF THESE
     TERMS.
-*/
+ */
 
 #include "lin_slave.h"
 #include "lin_hardware.h"
+#include "../../slcan/slcan.h"
 
 #define READ_TIMEOUT    15  //ms
 
@@ -53,7 +54,7 @@ static uint8_t LIN_timeout = 10; //TODO: Make dependent on Baudrate
 static bool LIN_timerRunning = false;
 static volatile uint8_t CountCallBack = 0;
 
-void LIN_init(uint8_t tableLength, const lin_rx_cmd_t* const command, void (*processData)){
+void LIN_init(uint8_t tableLength, const lin_rx_cmd_t * const command, void (*processData)) {
     LIN_rxCommand = command;
     LIN_rxCommandLength = tableLength;
     LIN_processData = processData;
@@ -62,54 +63,54 @@ void LIN_init(uint8_t tableLength, const lin_rx_cmd_t* const command, void (*pro
     LIN_setTimerHandler();
 }
 
-void LIN_queuePacket(uint8_t cmd){
-    const lin_rx_cmd_t* tempSchedule = LIN_rxCommand;    //copy table pointer so we can modify it
-    
-    cmd &= 0x3F;    //clear possible parity bits
-    for(uint8_t i = 0; i < LIN_rxCommandLength; i++){
-        if(cmd == tempSchedule->cmd){
+void LIN_queuePacket(uint8_t cmd) {
+    const lin_rx_cmd_t* tempSchedule = LIN_rxCommand; //copy table pointer so we can modify it
+
+    cmd &= 0x3F; //clear possible parity bits
+    for (uint8_t i = 0; i < LIN_rxCommandLength; i++) {
+        if (cmd == tempSchedule->cmd) {
             break;
         }
-        tempSchedule++;    //go to next entry
+        tempSchedule++; //go to next entry
     }
-    
+
     LIN_packet.type = tempSchedule->type;
     LIN_packet.length = tempSchedule->length;
-    
+
     //Build Packet - User defined data
     //add data
     memcpy(LIN_packet.data, tempSchedule->data, LIN_packet.length);
-    
+
     //Add Checksum
     LIN_packet.checksum = LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data);
     LIN_sendPacket(LIN_packet.length, LIN_packet.PID, LIN_packet.data);
 
-    
+
 }
 
-lin_rx_state_t LIN_handler(void){
+lin_rx_state_t LIN_handler(void) {
     static lin_rx_state_t LIN_rxState = LIN_RX_IDLE;
     static uint8_t rxDataIndex = 0;
 
-    if(LIN_rxInProgress == true){
-        if(LIN_timerRunning == false){
+    if (LIN_rxInProgress == true) {
+        if (LIN_timerRunning == false) {
             //Timeout
             LIN_rxState = LIN_RX_ERROR;
         }
     }
 
-    switch(LIN_rxState){
+    switch (LIN_rxState) {
         case LIN_RX_IDLE:
-            if(LIN_EUSART_DataReady > 0){
+            if (LIN_EUSART_DataReady > 0) {
                 //Start Timer
-                LIN_startTimer(READ_TIMEOUT); 
+                LIN_startTimer(READ_TIMEOUT);
                 LIN_rxInProgress = true;
                 LIN_rxState = LIN_RX_BREAK;
             }
             break;
         case LIN_RX_BREAK:
-            if(LIN_EUSART_DataReady > 0){
-                if(LIN_breakCheck() == true){  //Read Break
+            if (LIN_EUSART_DataReady > 0) {
+                if (LIN_breakCheck() == true) { //Read Break
                     LIN_rxState = LIN_RX_SYNC;
                 } else {
                     LIN_rxState = LIN_RX_ERROR;
@@ -117,8 +118,8 @@ lin_rx_state_t LIN_handler(void){
             }
             break;
         case LIN_RX_SYNC:
-            if(LIN_EUSART_DataReady > 0){
-                if(LIN_EUSART_Read() == 0x55){  //Read sync - discard
+            if (LIN_EUSART_DataReady > 0) {
+                if (LIN_EUSART_Read() == 0x55) { //Read sync - discard
                     LIN_rxState = LIN_RX_PID;
                 } else {
                     LIN_rxState = LIN_RX_ERROR;
@@ -126,7 +127,7 @@ lin_rx_state_t LIN_handler(void){
             }
             break;
         case LIN_RX_PID:
-            if(LIN_EUSART_DataReady > 0){
+            if (LIN_EUSART_DataReady > 0) {
                 LIN_packet.PID = LIN_EUSART_Read();
 
                 //check LIN Parity bits
@@ -137,15 +138,15 @@ lin_rx_state_t LIN_handler(void){
                 //}
                 //LIN_packet.type = LIN_getFromTable(LIN_packet.PID, TYPE);
                 //if(LIN_packet.type == RECEIVE){
-//                    LIN_packet.length = LIN_getFromTable(LIN_packet.PID, LENGTH);
-                    LIN_rxState = LIN_RX_DATA;
-                    LIN_packet.length = 0;
-                    if (LIN_packet.PID =< 0x3f)
-                        LIN_packet.length = 8;
-                    if (LIN_packet.PID =< 0x2f)
-                        LIN_packet.length = 4;
-                    if (LIN_packet.PID =< 0x1f)
-                        LIN_packet.length = 2;
+                //                    LIN_packet.length = LIN_getFromTable(LIN_packet.PID, LENGTH);
+                LIN_rxState = LIN_RX_DATA;
+                LIN_packet.length = 0;
+                if (LIN_packet.PID <= 0x3f)
+                    LIN_packet.length = 8;
+                if (LIN_packet.PID <= 0x2f)
+                    LIN_packet.length = 4;
+                if (LIN_packet.PID <= 0x1f)
+                    LIN_packet.length = 2;
 
                 //}
                 //else{
@@ -155,9 +156,9 @@ lin_rx_state_t LIN_handler(void){
             }
             break;
         case LIN_RX_DATA:
-            if(LIN_EUSART_DataReady > 0){
+            if (LIN_EUSART_DataReady > 0) {
                 LIN_packet.data[rxDataIndex] = LIN_EUSART_Read();
-                if(++rxDataIndex >= LIN_packet.length){
+                if (++rxDataIndex >= LIN_packet.length) {
                     //received all data bytes
                     rxDataIndex = 0;
                     LIN_rxState = LIN_RX_CHECKSUM;
@@ -165,12 +166,11 @@ lin_rx_state_t LIN_handler(void){
             }
             break;
         case LIN_RX_CHECKSUM:
-            if(LIN_EUSART_DataReady > 0){
+            if (LIN_EUSART_DataReady > 0) {
                 LIN_packet.checksum = LIN_EUSART_Read();
-                if(LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
+                if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
                     LIN_rxState = LIN_RX_ERROR;
-                }
-                else {
+                } else {
                     LIN_rxState = LIN_RX_RDY;
                 }
             }
@@ -179,15 +179,15 @@ lin_rx_state_t LIN_handler(void){
             LIN_queuePacket(LIN_packet.PID); //Send response automatically
             LIN_rxState = LIN_RX_RDY;
         case LIN_RX_RDY:
-            slcanReciveCanFrame(LIN_packet);
+            slcanReciveCanFrame(&LIN_packet);
             LIN_processData();
         case LIN_RX_ERROR:
             LIN_stopTimer();
             rxDataIndex = 0;
             LIN_rxInProgress = false;
-            memset(LIN_packet.rawPacket, 0, sizeof(LIN_packet.rawPacket));  //clear receive data
+            memset(LIN_packet.rawPacket, 0, sizeof (LIN_packet.rawPacket)); //clear receive data
         case LIN_RX_WAIT:
-            if(LIN_TRMT){
+            if (LIN_TRMT) {
                 LIN_enableRx();
                 LIN_rxState = LIN_RX_IDLE;
             } else {
@@ -198,42 +198,42 @@ lin_rx_state_t LIN_handler(void){
     return LIN_rxState;
 }
 
-void LIN_sendPacket(uint8_t length, uint8_t pid, uint8_t* data){
+void LIN_sendPacket(uint8_t length, uint8_t pid, uint8_t* data) {
 
     //Write data    
-    for(uint8_t i = 0; i < length; i++){
+    for (uint8_t i = 0; i < length; i++) {
         LIN_EUSART_Write(*(data + i));
     }
     //Add Checksum
     LIN_EUSART_Write(LIN_getChecksum(length, pid, data));
 }
 
-uint8_t LIN_getPacket(uint8_t* data){
+uint8_t LIN_getPacket(uint8_t* data) {
     uint8_t cmd = LIN_packet.PID & 0x3F;
-    
-    memcpy(data, LIN_packet.data, sizeof(LIN_packet.data));
-    memset(LIN_packet.rawPacket, 0, sizeof(LIN_packet.rawPacket));
-    
+
+    memcpy(data, LIN_packet.data, sizeof (LIN_packet.data));
+    memset(LIN_packet.rawPacket, 0, sizeof (LIN_packet.rawPacket));
+
     return cmd;
 }
 
-uint8_t LIN_getFromTable(uint8_t cmd, lin_sch_param_t param){
-    const lin_rx_cmd_t* rxCommand = LIN_rxCommand;    //copy table pointer so we can modify it
-    
-    cmd &= 0x3F;    //clear possible parity bits
+uint8_t LIN_getFromTable(uint8_t cmd, lin_sch_param_t param) {
+    const lin_rx_cmd_t* rxCommand = LIN_rxCommand; //copy table pointer so we can modify it
+
+    cmd &= 0x3F; //clear possible parity bits
     //check table
-    for(uint8_t length = 0; length < LIN_rxCommandLength; length++){
-        if(cmd == rxCommand->cmd){
+    for (uint8_t length = 0; length < LIN_rxCommandLength; length++) {
+        if (cmd == rxCommand->cmd) {
             break;
         }
-        rxCommand++;    //go to next entry
+        rxCommand++; //go to next entry
 
-        if(length == (LIN_rxCommandLength-1)){
-            return ERROR;   //command not in schedule table
+        if (length == (LIN_rxCommandLength - 1)) {
+            return ERROR; //command not in schedule table
         }
     }
-    
-    switch(param){
+
+    switch (param) {
         case CMD:
             return rxCommand->cmd;
         case TYPE:
@@ -243,28 +243,28 @@ uint8_t LIN_getFromTable(uint8_t cmd, lin_sch_param_t param){
         default:
             break;
     }
-    
+
     return ERROR;
 }
 
-bool LIN_checkPID(uint8_t pid){
-    if(LIN_getFromTable(pid, TYPE) == ERROR)
-        return false;   //PID not in schedule table
-    
-    if(pid == LIN_calcParity(pid & 0x3F))
-        return true;  
-    
+bool LIN_checkPID(uint8_t pid) {
+    if (LIN_getFromTable(pid, TYPE) == ERROR)
+        return false; //PID not in schedule table
+
+    if (pid == LIN_calcParity(pid & 0x3F))
+        return true;
+
     return false; //Parity Error
 
 }
 
-uint8_t LIN_calcParity(uint8_t CMD){
+uint8_t LIN_calcParity(uint8_t CMD) {
     lin_pid_t PID;
     PID.rawPID = CMD;
 
     //Workaround for compiler bug:
-//    PID.P0 = PID.ID0 ^ PID.ID1 ^ PID.ID2 ^ PID.ID4;
-//    PID.P1 = ~(PID.ID1 ^ PID.ID3 ^ PID.ID4 ^ PID.ID5);
+    //    PID.P0 = PID.ID0 ^ PID.ID1 ^ PID.ID2 ^ PID.ID4;
+    //    PID.P1 = ~(PID.ID1 ^ PID.ID3 ^ PID.ID4 ^ PID.ID5);
     PID.P0 = PID.ID0 ^ PID.ID1;
     PID.P0 = PID.P0 ^ PID.ID2;
     PID.P0 = PID.P0 ^ PID.ID4;
@@ -272,73 +272,72 @@ uint8_t LIN_calcParity(uint8_t CMD){
     PID.P1 = PID.P1 ^ PID.ID4;
     PID.P1 = PID.P1 ^ PID.ID5;
     PID.P1 = ~PID.P1;
-    
+
     return PID.rawPID;
 }
 
 uint8_t extern lin_checksum_type;
 
-uint8_t LIN_getChecksum(uint8_t length, uint8_t pid, uint8_t* data){
-    
+uint8_t LIN_getChecksum(uint8_t length, uint8_t pid, uint8_t* data) {
+
     uint16_t checksum = pid;
-    
+
     if (lin_checksum_type == 'c')
         checksum = 0;
-    
-    for (uint8_t i = 0; i < length; i++){
+
+    for (uint8_t i = 0; i < length; i++) {
         checksum = checksum + *data++;
-        if(checksum > 0xFF)
+        if (checksum > 0xFF)
             checksum -= 0xFF;
     }
     checksum = ~checksum;
-    
-    return (uint8_t)checksum;
+
+    return (uint8_t) checksum;
 }
 
-void LIN_startTimer(uint8_t timeout){
+void LIN_startTimer(uint8_t timeout) {
     LIN_timeout = timeout;
     LIN_WriteTimer(0);
     LIN_StartTimer();
     LIN_timerRunning = true;
 }
 
-void LIN_timerHandler(void){
+void LIN_timerHandler(void) {
 
     // callback function
-    if (++CountCallBack >= LIN_timeout)
-    {
+    if (++CountCallBack >= LIN_timeout) {
         // ticker function call
         LIN_stopTimer();
     }
 }
 
-void LIN_setTimerHandler(void){
+void LIN_setTimerHandler(void) {
     LIN_SetInterruptHandler(LIN_timerHandler);
 }
 
-void LIN_stopTimer(void){
+void LIN_stopTimer(void) {
     LIN_StopTimer();
     // reset ticker counter
     CountCallBack = 0;
     LIN_timerRunning = false;
 }
 
-void LIN_enableRx(void){
+void LIN_enableRx(void) {
     LIN_CREN = 1;
     LIN_RCIE = 1;
 }
 
-void LIN_disableRx(void){
+void LIN_disableRx(void) {
     LIN_CREN = 0;
     LIN_RCIE = 0;
 }
 
-bool LIN_breakCheck(void){
-    
-    if(LIN_FERR == 1){
+bool LIN_breakCheck(void) {
+
+    if (LIN_FERR == 1) {
         LIN_EUSART_Read();
         return true;
     }
-    
+
     return false;
 }

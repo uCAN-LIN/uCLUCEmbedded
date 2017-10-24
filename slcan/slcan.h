@@ -9,6 +9,7 @@
 #define SLCAN_PORT_H_
 
 #include "stdint.h"
+#include "../mcc_generated_files/LINDrivers/lin_slave.h"
 
 #define VERSION_FIRMWARE_MAJOR 0
 #define VERSION_FIRMWARE_MINOR 1
@@ -31,7 +32,7 @@
 
 void slcanClose();
 
-//uint8_t slcanReciveCanFrame(CanRxMsgTypeDef *pRxMsg);
+uint8_t slcanReciveCanFrame(lin_packet_t *pRxMsg);
 int slCanProccesInput(uint8_t ch);
 void slCanCheckCommand();
 

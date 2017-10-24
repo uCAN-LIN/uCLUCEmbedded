@@ -122,7 +122,7 @@ void LIN_startTimer(uint8_t timeout);
 
 void LIN_timerHandler(void);
 
-void LIN_setTimerHandler(void);
+void LIN_Master_setTimerHandler(void);
 
 void LIN_stopTimer(void);
 

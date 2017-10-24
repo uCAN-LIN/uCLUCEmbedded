@@ -61,7 +61,7 @@ void LIN_Master_init(uint8_t tableLength, const lin_cmd_packet_t* const table, v
     scheduleLength = tableLength;
     LIN_processData = processData;
     LIN_stopTimer();
-    LIN_setTimerHandler();
+    LIN_Master_setTimerHandler();
 
     LIN_startPeriod();
 }
@@ -244,25 +244,25 @@ void LIN_sendMasterPacket(void){
 //    LIN_timerRunning = true;
 //}
 //
-//void LIN_timerHandler(void){
-//
-//    if(LIN_timerRunning == true){
-//        if (++LIN_timerCallBack >= LIN_timeout){
-//            // ticker function call
-//            LIN_stopTimer();
-//        }
-//    }
-//    if(LIN_enablePeriodTx == true){
-//        if(++LIN_periodCallBack >= LIN_period){
-//            LIN_sendPeriodicTx();
-//        }
-//    }
-//        
-//}
-//
-//void LIN_setTimerHandler(void){
-//    LIN_SetInterruptHandler(LIN_timerHandler);
-//}
+void LIN_Master_timerHandler(void){
+
+    if(LIN_timerRunning == true){
+        if (++LIN_timerCallBack >= LIN_timeout){
+            // ticker function call
+            LIN_stopTimer();
+        }
+    }
+    if(LIN_enablePeriodTx == true){
+        if(++LIN_periodCallBack >= LIN_period){
+            LIN_sendPeriodicTx();
+        }
+    }
+        
+}
+
+void LIN_Master_setTimerHandler(void){
+    LIN_SetInterruptHandler(LIN_Master_timerHandler);
+}
 //
 //void LIN_stopTimer(void){
 //    // reset ticker counter

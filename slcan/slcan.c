@@ -201,7 +201,7 @@ static uint8_t transmitStd(uint8_t* line) {
  * @param  line Line string to parse
  * @retval None
  */
-void RebootToBootloader();
+//void RebootToBootloader();
 void slCanCheckCommand()
 {
 	uint8_t result = SLCAN_BELL;
@@ -299,7 +299,7 @@ void slCanCheckCommand()
             break;
          case 'b':
         	 line[0] = 0;
-        	 RebootToBootloader();
+//        	 RebootToBootloader();
         	 break;
 
     }
