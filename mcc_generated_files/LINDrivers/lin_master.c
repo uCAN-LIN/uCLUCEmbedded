@@ -39,6 +39,7 @@
 
 #include "lin_master.h"
 #include "lin_hardware.h"
+#include "lin_slave.h"
 
 static void (*LIN_processData)(void);
 
@@ -54,6 +55,7 @@ static bool LIN_timerRunning = false;
 static bool LIN_enablePeriodTx = false;
 static volatile uint8_t LIN_timerCallBack = 0;
 static volatile uint8_t LIN_periodCallBack = 0;
+
 
 
 void LIN_Master_init(uint8_t tableLength, const lin_cmd_packet_t* const table, void *processData){

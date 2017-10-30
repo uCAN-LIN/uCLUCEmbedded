@@ -54,8 +54,7 @@ void processLIN(void){
 
     cmd = LIN_getPacket(tempRxData);
     switch(cmd){
-        case UNLOCK:
-            break;
+       
         default:
             break;
     }
