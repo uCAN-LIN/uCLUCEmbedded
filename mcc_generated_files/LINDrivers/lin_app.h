@@ -47,13 +47,11 @@
 #include "lin_slave.h"
 #include "lin_master.h"
 
-//uint8_t LIN_Master_Data[8 * 16];
+#define MAX_LIN_SLAVE_COUNT 15
 
-uint8_t LIN_Master_Data[8 * 3];
+uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
 
-
-
-lin_cmd_packet_t scheduleTable[15]; 
+lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT]; 
 //= {
 //    //Command, Type, TX/RX Length, Timeout, Period, Data Address
 //    {LIN_MASTER_DEF_ID, RECEIVE, 8, 100, 0, &LIN_Master_Data[0] },

@@ -61,7 +61,7 @@ typedef struct {
     uint8_t length;
     uint8_t timeout;
     uint8_t period;
-    uint8_t* data;
+    uint8_t* data; 
 }lin_cmd_packet_t;
 
 typedef union {

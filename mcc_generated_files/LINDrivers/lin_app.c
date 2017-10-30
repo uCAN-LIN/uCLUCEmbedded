@@ -10,7 +10,7 @@
   Summary:
     LIN Slave Application
 
-  Description:
+  Description
     This source file provides the interface between the user and 
     the LIN drivers.
 
@@ -43,19 +43,5 @@
 
 
 void LIN_Slave_Initialize(void){
-
-    LIN_init(TABLE_SIZE, scheduleTable, processLIN);
-    
-}
-
-void processLIN(void){
-    uint8_t tempRxData[8];
-    uint8_t cmd;
-
-    cmd = LIN_getPacket(tempRxData);
-    switch(cmd){
-       
-        default:
-            break;
-    }
+    LIN_init(TABLE_SIZE, scheduleTable, 0);
 }

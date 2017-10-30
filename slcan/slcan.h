@@ -28,7 +28,7 @@
 #define CAN_BR_1M 8
 
 //ex TZ12020506
-#define LINE_MAXLEN 50
+#define LINE_MAXLEN 30
 
 void slcanClose();
 
@@ -36,5 +36,11 @@ uint8_t slcanReciveCanFrame(lin_packet_t *pRxMsg);
 int slCanProccesInput(uint8_t ch);
 void slCanCheckCommand();
 
+typedef enum {
+    LIN_MASTER,
+    LIN_SLAVE
+} LinType_t ;
+
+extern LinType_t lin_type;
 
 #endif /* SLCAN_PORT_H_ */

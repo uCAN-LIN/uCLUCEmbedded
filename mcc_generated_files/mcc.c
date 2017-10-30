@@ -79,7 +79,7 @@ void SYSTEM_Initialize(void)
     TMR0_Initialize();
     USBDeviceAttach();
     EUSART_Initialize();
-    LIN_Slave_Initialize();
+    
 }
 
 void OSCILLATOR_Initialize(void)

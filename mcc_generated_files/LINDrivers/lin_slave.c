@@ -43,8 +43,6 @@
 
 #define READ_TIMEOUT    15  //ms
 
-static void (*LIN_processData)(void);
-
 lin_packet_t LIN_packet;
 bool LIN_rxInProgress = false;
 const lin_rx_cmd_t* LIN_rxCommand;
@@ -57,7 +55,6 @@ static volatile uint8_t CountCallBack = 0;
 void LIN_init(uint8_t tableLength, const lin_rx_cmd_t * const command, void (*processData)) {
     LIN_rxCommand = command;
     LIN_rxCommandLength = tableLength;
-    LIN_processData = processData;
     LIN_stopTimer();
     LIN_enableRx();
     LIN_setTimerHandler();
@@ -88,7 +85,7 @@ void LIN_queuePacket(uint8_t cmd) {
 
 }
 
-lin_rx_state_t LIN_handler(void) {
+lin_rx_state_t LIN_Slave_handler(void) {
     static lin_rx_state_t LIN_rxState = LIN_RX_IDLE;
     static uint8_t rxDataIndex = 0;
 
@@ -180,7 +177,6 @@ lin_rx_state_t LIN_handler(void) {
             LIN_rxState = LIN_RX_RDY;
         case LIN_RX_RDY:
             slcanReciveCanFrame(&LIN_packet);
-            LIN_processData();
         case LIN_RX_ERROR:
             LIN_stopTimer();
             rxDataIndex = 0;

@@ -32,6 +32,12 @@ volatile int32_t serialNumber;
 static uint8_t state = STATE_CONFIG;
 static uint8_t timestamping = 0;
 
+typedef enum {
+    LIN_MASTER,
+    LIN_SLAVE
+} LinType_t ;
+
+LinType_t lin_type;
 
 static uint8_t terminator = SLCAN_CR;
 
@@ -72,14 +78,8 @@ static void slcanSetOutputAsHex(uint8_t ch) {
 	slCanSendNibble(ch & 0x0F);
 }
 
-// frame buffer
-#define FRAME_BUFFER_SIZE 128
-uint8_t frameBuffer[FRAME_BUFFER_SIZE];
-uint32_t dataToSend = 0;
-
 void slcanClose()
 {
-	dataToSend = 0;
 	state = STATE_CONFIG;
 }
 
@@ -254,13 +254,15 @@ void slCanCheckCommand()
             break;
         case 'o':
         case 'O': // Open CAN channel
-   
+            state = STATE_OPEN;
             break;
         case 'l': // Loop-back mode
+            
             break;
         case 'L': // Open CAN channel in listen-only mode
             break;
         case 'C': // Close CAN channel
+            state = STATE_CONFIG;
             break;
         case 'r': // Transmit standard RTR (11 bit) frame
         case 'R': // Transmit extended RTR (29 bit) frame

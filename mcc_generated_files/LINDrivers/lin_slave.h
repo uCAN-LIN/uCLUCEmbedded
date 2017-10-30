@@ -111,7 +111,7 @@ uint8_t LIN_getPacket(uint8_t* data);
 
 uint8_t LIN_getFromTable(uint8_t cmd, lin_sch_param_t param);
 
-lin_rx_state_t LIN_handler(void);
+lin_rx_state_t LIN_Slave_handler(void);
 
 bool LIN_checkPID(uint8_t pid);
 

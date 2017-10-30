@@ -49,6 +49,7 @@
 /*
                          Main application
  */
+
 uint8_t lin_checksum_type = 'c';
 void main(void)
 {
@@ -70,20 +71,23 @@ void main(void)
     // Disable the Peripheral Interrupts
     //INTERRUPT_PeripheralInterruptDisable();
 
+    LIN_Slave_Initialize();
     while (1)
     {
-        LIN_handler();
+        LIN_Slave_handler();
         {
             static uint8_t buffer[LINE_MAXLEN];
             uint8_t numBytes;
             numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
             if(numBytes > 0)
             {
-                for (uint8_t i; i < LINE_MAXLEN; i++)
+                for (uint8_t i; i < numBytes; i++)
                 {
-                    slCanProccesInput(buffer[i]);
+                    if (slCanProccesInput(buffer[i]))
+                    {
+                        slCanCheckCommand();
+                    }
                 }
-                slCanCheckCommand();
             }
         }
     }
