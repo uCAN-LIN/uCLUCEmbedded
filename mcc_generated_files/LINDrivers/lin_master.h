@@ -101,7 +101,7 @@ typedef union {
 
 //Set up schedule table timings
 
-void LIN_Master_init(uint8_t tableLength, const lin_cmd_packet_t* const table, void (*processData));
+void LIN_Master_init(uint8_t tableLength);
 
 void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data);
 
@@ -111,7 +111,7 @@ void LIN_sendMasterPacket(void);
 
 uint8_t LIN_getPacket(uint8_t* data);
 
-lin_state_t LIN_handler(void);
+lin_state_t LIN_Master_handler(void);
 
 uint8_t LIN_getChecksum(uint8_t length, uint8_t pid, uint8_t* data);
 

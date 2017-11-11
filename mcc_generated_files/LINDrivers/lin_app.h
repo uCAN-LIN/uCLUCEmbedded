@@ -49,9 +49,8 @@
 
 #define MAX_LIN_SLAVE_COUNT 15
 
-uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
-
-lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT]; 
+extern uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
+//extern lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT]; 
 //= {
 //    //Command, Type, TX/RX Length, Timeout, Period, Data Address
 //    {LIN_MASTER_DEF_ID, RECEIVE, 8, 100, 0, &LIN_Master_Data[0] },
@@ -73,8 +72,10 @@ lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT];
 //};
 #define TABLE_SIZE  (sizeof(scheduleTable)/sizeof(lin_cmd_packet_t))
 
+extern uint8_t lin_master_table_last_index;
+
 void LIN_Slave_Initialize(void);
-void LIN_Master_Initialize(void);
+
 
 void processLIN(void);
 

@@ -41,7 +41,9 @@
 #include "lin_app.h"
 #include "./../../slcan/slcan.h"
 
+ 
+uint8_t lin_master_table_last_index = 0;
 
 void LIN_Slave_Initialize(void){
-    LIN_init(TABLE_SIZE, scheduleTable, 0);
+    LIN_init(0);
 }

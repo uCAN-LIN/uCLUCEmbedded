@@ -32,12 +32,7 @@ volatile int32_t serialNumber;
 static uint8_t state = STATE_CONFIG;
 static uint8_t timestamping = 0;
 
-typedef enum {
-    LIN_MASTER,
-    LIN_SLAVE
-} LinType_t ;
-
-LinType_t lin_type;
+LinType_t lin_type = LIN_SLAVE;
 
 static uint8_t terminator = SLCAN_CR;
 
@@ -256,10 +251,13 @@ void slCanCheckCommand()
         case 'O': // Open CAN channel
             state = STATE_OPEN;
             break;
-        case 'l': // Loop-back mode
-            
+        case 'l': // Loop-back mode CAN
+            LIN_Slave_Initialize();
+            lin_type = LIN_SLAVE;
             break;
         case 'L': // Open CAN channel in listen-only mode
+            LIN_Master_init(lin_master_table_last_index);
+            lin_type = LIN_MASTER;
             break;
         case 'C': // Close CAN channel
             state = STATE_CONFIG;
@@ -279,14 +277,7 @@ void slCanCheckCommand()
             break;
         case 'F': // Read status flags
             {
-//                unsigned char status = HAL_CAN_GetError(&hcan);
-//                unsigned char flags = HAL_CAN_GetError(&hcan);
-//                if (flags & 0x01) status |= 0x04; // error warning
-//                if (flags & 0xC0) status |= 0x08; // data overrun
-//                if (flags & 0x18) status |= 0x20; // passive error
-//                if (flags & 0x20) status |= 0x80; // bus error
                 slcanSetOutputChar('F');
-//                slcanSetOutputAsHex(status);
                 result = terminator;
             }
             break;
@@ -317,7 +308,7 @@ void slCanCheckCommand()
  * 			step Current step
  * @retval Next character to print out
  */
-uint8_t slcanReciveCanFrame(lin_packet_t *pRxMsg)
+uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg)
 {
 	uint8_t i;
 

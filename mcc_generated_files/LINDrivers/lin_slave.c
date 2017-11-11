@@ -52,9 +52,10 @@ static uint8_t LIN_timeout = 10; //TODO: Make dependent on Baudrate
 static bool LIN_timerRunning = false;
 static volatile uint8_t CountCallBack = 0;
 
-void LIN_init(uint8_t tableLength, const lin_rx_cmd_t * const command, void (*processData)) {
-    LIN_rxCommand = command;
-    LIN_rxCommandLength = tableLength;
+
+
+void LIN_init(void (*processData)) {
+    
     LIN_stopTimer();
     LIN_enableRx();
     LIN_setTimerHandler();

@@ -40,13 +40,13 @@
 #include "lin_master.h"
 #include "lin_hardware.h"
 #include "lin_slave.h"
-
-static void (*LIN_processData)(void);
+#include "lin_app.h"
+#include "../../slcan/slcan.h"
 
 static lin_packet_t LIN_packet;
 static lin_rxpacket_t LIN_rxPacket;
 bool LIN_txReady = false;
-const lin_cmd_packet_t* schedule;
+lin_cmd_packet_t* schedule;
 uint8_t scheduleLength;
 
 static uint8_t LIN_timeout = 10;
@@ -56,12 +56,12 @@ static bool LIN_enablePeriodTx = false;
 static volatile uint8_t LIN_timerCallBack = 0;
 static volatile uint8_t LIN_periodCallBack = 0;
 
+uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
+lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT];
 
-
-void LIN_Master_init(uint8_t tableLength, const lin_cmd_packet_t* const table, void *processData){
-    schedule = table;
+void LIN_Master_init(uint8_t tableLength){
+    schedule = scheduleTable;
     scheduleLength = tableLength;
-    LIN_processData = processData;
     LIN_stopTimer();
     LIN_Master_setTimerHandler();
 
@@ -153,8 +153,18 @@ lin_state_t LIN_Master_handler(void){
             break;
         case LIN_MASTER_RX_RDY:
             //Received Transmission
-            LIN_processData();
-            LIN_state = LIN_IDLE;
+            //ll //todo 
+            //slcan_handler
+            {
+                sl_lin_packet_t lf;
+                lf.PID = LIN_rxPacket.cmd;
+                lf.checksum = LIN_rxPacket.checksum;
+                lf.length = LIN_rxPacket.rxLength;
+                memcpy(lf.data,LIN_rxPacket.data,lf.length);
+                
+                slcanReciveCanFrame(&lf);
+                LIN_state = LIN_IDLE;
+            }
             break;
     }
     return LIN_state;

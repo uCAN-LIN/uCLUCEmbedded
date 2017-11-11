@@ -45,12 +45,16 @@
 
 #include "mcc_generated_files/mcc.h"
 #include "slcan/slcan.h"
+#include "mcc_generated_files/LINDrivers/lin_master.h"
 
 /*
                          Main application
  */
 
 uint8_t lin_checksum_type = 'c';
+
+extern LinType_t lin_type;
+
 void main(void)
 {
     // initialize the device
@@ -72,9 +76,14 @@ void main(void)
     //INTERRUPT_PeripheralInterruptDisable();
 
     LIN_Slave_Initialize();
+    
     while (1)
     {
-        LIN_Slave_handler();
+        if (lin_type == LIN_MASTER)
+            LIN_Master_handler();
+        else 
+            LIN_Slave_handler();
+        
         {
             static uint8_t buffer[LINE_MAXLEN];
             uint8_t numBytes;

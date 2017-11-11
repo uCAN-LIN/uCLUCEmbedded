@@ -101,7 +101,7 @@ typedef union {
 }lin_pid_t;
 
 //Set up schedule table timings
-void LIN_init(uint8_t tableLength, const lin_rx_cmd_t* const command, void (*processData));
+void LIN_init(void (*processData));
 
 void LIN_queuePacket(uint8_t cmd);
 

@@ -32,7 +32,18 @@
 
 void slcanClose();
 
-uint8_t slcanReciveCanFrame(lin_packet_t *pRxMsg);
+typedef union {
+    struct {
+        uint8_t PID;
+        uint8_t data[8];
+        uint8_t checksum;
+        uint8_t type;
+        int8_t length;
+    };
+    uint8_t rawPacket[13];
+}sl_lin_packet_t;
+
+uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg);
 int slCanProccesInput(uint8_t ch);
 void slCanCheckCommand();
 
@@ -40,6 +51,8 @@ typedef enum {
     LIN_MASTER,
     LIN_SLAVE
 } LinType_t ;
+
+
 
 extern LinType_t lin_type;
 
