@@ -107,14 +107,25 @@ void EUSART_Initialize(void)
     PIE1bits.RCIE = 1;
 }
 
+extern uint8_t TMR0_ReadTimer();
+uint8_t EUSART_read_timeout = 0;
+
 uint8_t EUSART_Read(void)
 {
     uint8_t readValue  = 0;
+    EUSART_read_timeout = 0;
 
     // RCSTAbits.CREN = 1; //ll was in the lin_slave classic checksum
 
+    uint8_t tmr = TMR0_ReadTimer();
+    
     while(0 == eusartRxCount)
     {
+        if ((TMR0_ReadTimer() - tmr) >= 3) //at least 3ms timeout
+        {
+            EUSART_read_timeout = 1;
+            return 0;
+        }
     }
 
     readValue = eusartRxBuffer[eusartRxTail++];

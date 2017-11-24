@@ -138,14 +138,8 @@ lin_rx_state_t LIN_Slave_handler(void) {
                 //if(LIN_packet.type == RECEIVE){
                 //                    LIN_packet.length = LIN_getFromTable(LIN_packet.PID, LENGTH);
                 LIN_rxState = LIN_RX_DATA;
-                LIN_packet.length = 0;
-                if (LIN_packet.PID <= 0x3f)
-                    LIN_packet.length = 8;
-                if (LIN_packet.PID <= 0x2f)
-                    LIN_packet.length = 4;
-                if (LIN_packet.PID <= 0x1f)
-                    LIN_packet.length = 2;
-
+                LIN_packet.length = 8; // len always max then check for timeout
+                
                 //}
                 //else{
                 //    LIN_disableRx();
@@ -154,14 +148,29 @@ lin_rx_state_t LIN_Slave_handler(void) {
             }
             break;
         case LIN_RX_DATA:
-            if (LIN_EUSART_DataReady > 0) {
-                LIN_packet.data[rxDataIndex] = LIN_EUSART_Read();
-                if (++rxDataIndex >= LIN_packet.length) {
-                    //received all data bytes
-                    rxDataIndex = 0;
-                    LIN_rxState = LIN_RX_CHECKSUM;
+            //if (LIN_EUSART_DataReady > 0) 
+            {
+                extern uint8_t EUSART_read_timeout;
+                uint8_t uart_rx_byte = LIN_EUSART_Read();
+                if (EUSART_read_timeout == 0)
+                {
+                    LIN_packet.data[rxDataIndex] = uart_rx_byte;
+                    if (++rxDataIndex >= LIN_packet.length) {
+                        //received all data bytes
+                        rxDataIndex = 0;
+                        LIN_rxState = LIN_RX_CHECKSUM;
+                    }
+                } else 
+                {
+                    // frame was shorter then 8 bits go to checksum
+                    LIN_packet.length = rxDataIndex - 1;
+                    LIN_packet.checksum = LIN_packet.data[rxDataIndex]; 
+                    if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
+                    LIN_rxState = LIN_RX_ERROR;
+                    } else {
+                        LIN_rxState = LIN_RX_RDY;
+                    }
                 }
-            }
             break;
         case LIN_RX_CHECKSUM:
             if (LIN_EUSART_DataReady > 0) {
@@ -193,6 +202,7 @@ lin_rx_state_t LIN_Slave_handler(void) {
             break;
     }
     return LIN_rxState;
+}
 }
 
 void LIN_sendPacket(uint8_t length, uint8_t pid, uint8_t* data) {

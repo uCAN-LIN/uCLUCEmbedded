@@ -46,7 +46,7 @@
 // Configuration bits: selected in the GUI
 
 // CONFIG1
-#pragma config FOSC = INTOSC    // Oscillator Selection Bits->INTOSC oscillator: I/O function on CLKIN pin
+#pragma config FOSC = INTOSC    // Oscillator Selection Bits->ECH, External Clock, High Power Mode (4-20 MHz): device clock supplied to CLKIN pins
 #pragma config WDTE = OFF    // Watchdog Timer Enable->WDT disabled
 #pragma config PWRTE = OFF    // Power-up Timer Enable->PWRT disabled
 #pragma config MCLRE = ON    // MCLR Pin Function Select->MCLR/VPP pin function is MCLR
@@ -76,9 +76,9 @@ void SYSTEM_Initialize(void)
     OSCILLATOR_Initialize();
     WDT_Initialize();
     USBDeviceInit();
-//    TMR0_Initialize();
+    TMR0_Initialize();
     USBDeviceAttach();
-//    EUSART_Initialize();
+    EUSART_Initialize();
     
 }
 

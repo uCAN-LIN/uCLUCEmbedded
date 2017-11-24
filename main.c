@@ -55,49 +55,71 @@ uint8_t lin_checksum_type = 'c';
 
 extern LinType_t lin_type;
 
+char * data_data[] = {"abc\r\n"};
+
+void UserApplication(void)
+{
+    volatile static uint8_t buffer[LINE_MAXLEN] = {"Test\n\r"};
+    uint8_t numBytes;
+        
+    numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
+    if(numBytes > 0)
+    {
+        if(USBUSARTIsTxTrfReady())
+        {
+            putsUSBUSART(buffer);
+        }    
+    }
+}
+//void UserApplication(void)
+//{
+//    if (lin_type == LIN_MASTER)
+//         LIN_Master_handler();
+//     else 
+//         LIN_Slave_handler();
+//
+//     {
+//         static uint8_t buffer[LINE_MAXLEN];
+//         uint8_t numBytes;
+//         numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
+//         if(numBytes > 0)
+//         {
+//             for (uint8_t i; i < numBytes; i++)
+//             {
+//                 if (slCanProccesInput(buffer[i]))
+//                 {
+//                     slCanCheckCommand();
+//                 }
+//             }
+//         }
+//     }
+//}
+
 void main(void)
 {
-    // initialize the device
     SYSTEM_Initialize();
     
-    // When using interrupts, you need to set the Global and Peripheral Interrupt Enable bits
-    // Use the following macros to:
-
-    // Enable the Global Interrupts
     INTERRUPT_GlobalInterruptEnable();
-
-    // Enable the Peripheral Interrupts
     INTERRUPT_PeripheralInterruptEnable();
 
-    // Disable the Global Interrupts
-    //INTERRUPT_GlobalInterruptDisable();
+//    LIN_Slave_Initialize();
 
-    // Disable the Peripheral Interrupts
-    //INTERRUPT_PeripheralInterruptDisable();
-
-    LIN_Slave_Initialize();
-    
     while (1)
     {
-        if (lin_type == LIN_MASTER)
-            LIN_Master_handler();
-        else 
-            LIN_Slave_handler();
-        
+//        USBDeviceTasks();
+        if((USBGetDeviceState() < CONFIGURED_STATE) ||
+           (USBIsDeviceSuspended() == true))
         {
-            static uint8_t buffer[LINE_MAXLEN];
-            uint8_t numBytes;
-            numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
-            if(numBytes > 0)
-            {
-                for (uint8_t i; i < numBytes; i++)
-                {
-                    if (slCanProccesInput(buffer[i]))
-                    {
-                        slCanCheckCommand();
-                    }
-                }
-            }
+            //Either the device is not configured or we are suspended
+            //  so we don't want to do execute any application code
+            continue;   //go back to the top of the while loop
+        }
+        else
+        {
+            //Keep trying to send data to the PC as required
+            CDCTxService();
+            //Run application code.
+            UserApplication();
         }
     }
 }
