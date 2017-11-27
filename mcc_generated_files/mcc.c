@@ -76,9 +76,9 @@ void SYSTEM_Initialize(void)
     OSCILLATOR_Initialize();
     WDT_Initialize();
     USBDeviceInit();
-//    TMR0_Initialize();
+    TMR0_Initialize();
     USBDeviceAttach();
-//    EUSART_Initialize();
+    EUSART_Initialize();
     
 }
 

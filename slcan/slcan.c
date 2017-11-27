@@ -36,7 +36,7 @@ LinType_t lin_type = LIN_SLAVE;
 
 static uint8_t terminator = SLCAN_CR;
 
-uint8_t sl_frame[32];
+uint8_t sl_frame[LINE_MAXLEN];
 uint8_t sl_frame_len=0;
 /**
   * @brief  Adds data to send buffer
@@ -80,11 +80,22 @@ void slcanClose()
 
 static void slcanOutputFlush(void)
 {
-    while(!USBUSARTIsTxTrfReady()) //TODO to jest ?le !
+    
+    while(!USBUSARTIsTxTrfReady())
+    {
+       CDCTxService();   
+    }
     {
         putUSBUSART(sl_frame,sl_frame_len);
-        sl_frame_len = 0;
     }
+    /* send all data */
+    CDCTxService();   
+    while(!USBUSARTIsTxTrfReady())
+    {
+       CDCTxService();   
+    }
+    
+    sl_frame_len = 0;
 }
 
 /**
@@ -168,7 +179,7 @@ static uint8_t transmitStd(uint8_t* line) {
     // type
     if (!parseHex(&line[3], 1, &temp)) return 0;
     //pck.type = temp;
-    pck.type = TRANSMIT;
+//    pck.type = TRANSMIT;
     // len
     if (!parseHex(&line[4], 1, &temp)) return 0;
     pck.length = temp;
@@ -249,18 +260,22 @@ void slCanCheckCommand()
             break;
         case 'o':
         case 'O': // Open CAN channel
+            result = terminator;
             state = STATE_OPEN;
             break;
         case 'l': // Loop-back mode CAN
             LIN_Slave_Initialize();
+            result = terminator;
             lin_type = LIN_SLAVE;
             break;
         case 'L': // Open CAN channel in listen-only mode
             LIN_Master_init(lin_master_table_last_index);
+            result = terminator;
             lin_type = LIN_MASTER;
             break;
         case 'C': // Close CAN channel
             state = STATE_CONFIG;
+            result = terminator;
             break;
         case 'r': // Transmit standard RTR (11 bit) frame
         case 'R': // Transmit extended RTR (29 bit) frame
@@ -283,15 +298,10 @@ void slCanCheckCommand()
             break;
          case 'Z': // Set time stamping
             {
-                unsigned long stamping;
-                if (parseHex(&line[1], 1, &stamping)) {
-                    timestamping = (stamping != 0);
-                    result = terminator;
-                }
+                break;
             }
             break;
          case 'b':
-        	 line[0] = 0;
 //        	 RebootToBootloader();
         	 break;
 

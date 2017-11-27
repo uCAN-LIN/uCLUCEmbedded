@@ -53,47 +53,29 @@
 
 uint8_t lin_checksum_type = 'c';
 
-extern LinType_t lin_type;
-
-char * data_data[] = {"abc\r\n"};
-
 void UserApplication(void)
 {
-    volatile static uint8_t buffer[LINE_MAXLEN] = {"Test\n\r"};
-    uint8_t numBytes;
-        
-    numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
-    if(numBytes > 0)
-    {
-        if(USBUSARTIsTxTrfReady())
-        {
-            putsUSBUSART(buffer);
-        }    
-    }
+    if (lin_type == LIN_MASTER)
+         LIN_Master_handler();
+     else 
+         LIN_Slave_handler();
+
+     {
+         static uint8_t buffer[LINE_MAXLEN];
+         uint8_t numBytes;
+         numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
+         if(numBytes > 0)
+         {
+             for (uint8_t i = 0; i < numBytes; i++)
+             {
+                 if (slCanProccesInput(buffer[i]))
+                 {
+                     slCanCheckCommand();
+                 }
+             }
+         }
+     }
 }
-//void UserApplication(void)
-//{
-//    if (lin_type == LIN_MASTER)
-//         LIN_Master_handler();
-//     else 
-//         LIN_Slave_handler();
-//
-//     {
-//         static uint8_t buffer[LINE_MAXLEN];
-//         uint8_t numBytes;
-//         numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
-//         if(numBytes > 0)
-//         {
-//             for (uint8_t i; i < numBytes; i++)
-//             {
-//                 if (slCanProccesInput(buffer[i]))
-//                 {
-//                     slCanCheckCommand();
-//                 }
-//             }
-//         }
-//     }
-//}
 
 void main(void)
 {
@@ -102,7 +84,7 @@ void main(void)
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
 
-//    LIN_Slave_Initialize();
+    LIN_Slave_Initialize();
 
     while (1)
     {
