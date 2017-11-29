@@ -281,7 +281,7 @@ void slCanCheckCommand()
         case 'R': // Transmit extended RTR (29 bit) frame
         case 't': // Transmit standard (11 bit) frame
         case 'T': // Transmit extended (29 bit) frame
-            if (state == STATE_OPEN)
+//            if (state == STATE_OPEN)
             {
                 if (transmitStd(line) == HAL_OK) {
                     if (line[0] < 'Z') slcanSetOutputChar('Z');

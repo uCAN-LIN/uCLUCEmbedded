@@ -40,6 +40,7 @@
 #include "lin_slave.h"
 #include "lin_hardware.h"
 #include "../../slcan/slcan.h"
+#include "../../mcc_generated_files/usb/usb_device_cdc.h"
 
 #define READ_TIMEOUT    15  //ms
 
@@ -86,6 +87,20 @@ void LIN_queuePacket(uint8_t cmd) {
 
 }
 
+void DBG(const char *x)
+{
+//    while(!USBUSARTIsTxTrfReady())
+//    {
+//       CDCTxService();   
+//    }
+//    putrsUSBUSART(x);
+//    CDCTxService();   
+//    while(!USBUSARTIsTxTrfReady())
+//    {
+//       CDCTxService();   
+//    }
+}
+
 lin_rx_state_t LIN_Slave_handler(void) {
     static lin_rx_state_t LIN_rxState = LIN_RX_IDLE;
     static uint8_t rxDataIndex = 0;
@@ -104,15 +119,17 @@ lin_rx_state_t LIN_Slave_handler(void) {
                 LIN_startTimer(READ_TIMEOUT);
                 LIN_rxInProgress = true;
                 LIN_rxState = LIN_RX_BREAK;
+                DBG("!");
             }
             break;
         case LIN_RX_BREAK:
             if (LIN_EUSART_DataReady > 0) {
-                if (LIN_breakCheck() == true) { //Read Break
+//                if (LIN_breakCheck() == true) { //Read Break
                     LIN_rxState = LIN_RX_SYNC;
-                } else {
-                    LIN_rxState = LIN_RX_ERROR;
-                }
+//                } else {
+//                    LIN_rxState = LIN_RX_ERROR;
+//                }
+            DBG("@");
             }
             break;
         case LIN_RX_SYNC:
@@ -122,6 +139,7 @@ lin_rx_state_t LIN_Slave_handler(void) {
                 } else {
                     LIN_rxState = LIN_RX_ERROR;
                 }
+                DBG("#");
             }
             break;
         case LIN_RX_PID:
@@ -145,6 +163,7 @@ lin_rx_state_t LIN_Slave_handler(void) {
                 //    LIN_disableRx();
                 //    LIN_rxState = LIN_RX_TX_DATA;
                 //}
+                DBG("$");
             }
             break;
         case LIN_RX_DATA:
@@ -160,25 +179,32 @@ lin_rx_state_t LIN_Slave_handler(void) {
                         rxDataIndex = 0;
                         LIN_rxState = LIN_RX_CHECKSUM;
                     }
+                    DBG("%");
                 } else 
                 {
                     // frame was shorter then 8 bits go to checksum
                     LIN_packet.length = rxDataIndex - 1;
-                    LIN_packet.checksum = LIN_packet.data[rxDataIndex]; 
+                    LIN_packet.checksum = LIN_packet.data[rxDataIndex-1]; 
                     if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
-                    LIN_rxState = LIN_RX_ERROR;
+                        DBG("^");
+                        LIN_rxState = LIN_RX_ERROR;
                     } else {
-                        LIN_rxState = LIN_RX_RDY;
-                    }
+                        DBG("&");
+                        LIN_rxState = LIN_RX_ERROR;
+                        slcanReciveCanFrame(&LIN_packet);
+                    }  
                 }
             break;
         case LIN_RX_CHECKSUM:
             if (LIN_EUSART_DataReady > 0) {
+                DBG("*");
                 LIN_packet.checksum = LIN_EUSART_Read();
                 if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
                     LIN_rxState = LIN_RX_ERROR;
+                    DBG("(");
                 } else {
-                    LIN_rxState = LIN_RX_RDY;
+                    LIN_rxState = LIN_RX_ERROR;
+                    slcanReciveCanFrame(&LIN_packet);
                 }
             }
             break;
@@ -186,12 +212,17 @@ lin_rx_state_t LIN_Slave_handler(void) {
             LIN_queuePacket(LIN_packet.PID); //Send response automatically
             LIN_rxState = LIN_RX_RDY;
         case LIN_RX_RDY:
+            DBG(")");
             slcanReciveCanFrame(&LIN_packet);
         case LIN_RX_ERROR:
+            
+            DBG("_");
             LIN_stopTimer();
+            LIN_EUSART_Restart();
             rxDataIndex = 0;
             LIN_rxInProgress = false;
             memset(LIN_packet.rawPacket, 0, sizeof (LIN_packet.rawPacket)); //clear receive data
+            LIN_rxState = LIN_RX_WAIT;
         case LIN_RX_WAIT:
             if (LIN_TRMT) {
                 LIN_enableRx();
@@ -309,9 +340,11 @@ void LIN_startTimer(uint8_t timeout) {
     LIN_timerRunning = true;
 }
 
+extern volatile uint8_t EUSART_Tmr;
 void LIN_timerHandler(void) {
 
     // callback function
+    EUSART_Tmr ++;
     if (++CountCallBack >= LIN_timeout) {
         // ticker function call
         LIN_stopTimer();

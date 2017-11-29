@@ -51,9 +51,9 @@ please contact mla_licensing@microchip.com
 #ifdef USB_USE_CDC
 
 #ifndef FIXED_ADDRESS_MEMORY
-    #define IN_DATA_BUFFER_ADDRESS_TAG
+    #define IN_DATA_BUFFER_ADDRESS_TAG @ 0x120
     #define OUT_DATA_BUFFER_ADDRESS_TAG @ 0x20
-    #define CONTROL_BUFFER_ADDRESS_TAG
+    #define CONTROL_BUFFER_ADDRESS_TAG  @ 0x220
 #endif
 
 #if !defined(IN_DATA_BUFFER_ADDRESS_TAG) || !defined(OUT_DATA_BUFFER_ADDRESS_TAG) || !defined(CONTROL_BUFFER_ADDRESS_TAG)

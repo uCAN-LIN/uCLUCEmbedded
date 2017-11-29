@@ -51,6 +51,7 @@
 #define LIN_EUSART_DataReady    EUSART_DataReady
 #define LIN_EUSART_Read         EUSART_Read
 #define LIN_EUSART_Write        EUSART_Write
+#define LIN_EUSART_Restart      EUSART_Restart
 #define LIN_TXIE                TXIE
 #define LIN_RCIE                RCIE
 

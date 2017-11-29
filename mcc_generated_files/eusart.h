@@ -220,6 +220,8 @@ void EUSART_Transmit_ISR(void);
 */
 void EUSART_Receive_ISR(void);
 
+void EUSART_Restart(void);
+
 #ifdef __cplusplus  // Provide C++ Compatibility
 
     }

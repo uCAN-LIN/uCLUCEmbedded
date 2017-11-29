@@ -87,11 +87,11 @@ void EUSART_Initialize(void)
     // TX9 8-bit; TX9D 0; SENDB sync_break_complete; TXEN enabled; SYNC asynchronous; BRGH hi_speed; CSRC slave;
     TXSTA = 0x24;
     
-    // Baud Rate = 9600; SPBRGL 225; 
-    SPBRGL = 0xE1;
+    // Baud Rate = 19200; SPBRGL 112; 
+    SPBRGL = 0x70;
 
-    // Baud Rate = 9600; SPBRGH 4; 
-    SPBRGH = 0x04;
+    // Baud Rate = 19200; SPBRGH 2; 
+    SPBRGH = 0x02;
 
 
     // initializing the driver state
@@ -107,7 +107,7 @@ void EUSART_Initialize(void)
     PIE1bits.RCIE = 1;
 }
 
-extern uint8_t TMR0_ReadTimer();
+volatile uint8_t EUSART_Tmr = 0;
 uint8_t EUSART_read_timeout = 0;
 
 uint8_t EUSART_Read(void)
@@ -117,11 +117,11 @@ uint8_t EUSART_Read(void)
 
     // RCSTAbits.CREN = 1; //ll was in the lin_slave classic checksum
 
-    uint8_t tmr = TMR0_ReadTimer();
+    EUSART_Tmr = 0;
     
     while(0 == eusartRxCount)
     {
-        if ((TMR0_ReadTimer() - tmr) >= 3) //at least 3ms timeout
+        if ((EUSART_Tmr) >= 13) //at least 3ms timeout
         {
             EUSART_read_timeout = 1;
             return 0;
@@ -138,6 +138,18 @@ uint8_t EUSART_Read(void)
     PIE1bits.RCIE = 1;
 
     return readValue;
+}
+
+void EUSART_Restart(void)
+{
+    // initializing the driver state
+    eusartTxHead = 0;
+    eusartTxTail = 0;
+    eusartTxBufferRemaining = sizeof(eusartTxBuffer);
+
+    eusartRxHead = 0;
+    eusartRxTail = 0;
+    eusartRxCount = 0;
 }
 
 void EUSART_Write(uint8_t txData)
