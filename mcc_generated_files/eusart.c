@@ -52,7 +52,7 @@
   Section: Macro Declarations
 */
 #define EUSART_TX_BUFFER_SIZE 15
-#define EUSART_RX_BUFFER_SIZE 15
+#define EUSART_RX_BUFFER_SIZE 30
 
 /**
   Section: Global Variables
@@ -121,7 +121,7 @@ uint8_t EUSART_Read(void)
     
     while(0 == eusartRxCount)
     {
-        if ((EUSART_Tmr) >= 13) //at least 3ms timeout
+        if ((EUSART_Tmr) >= 5) //at least 3ms timeout
         {
             EUSART_read_timeout = 1;
             return 0;
@@ -143,13 +143,21 @@ uint8_t EUSART_Read(void)
 void EUSART_Restart(void)
 {
     // initializing the driver state
+    RCSTAbits.SPEN = 0;
+    
     eusartTxHead = 0;
     eusartTxTail = 0;
     eusartTxBufferRemaining = sizeof(eusartTxBuffer);
 
+    RCSTAbits.SPEN = 1;
+    
     eusartRxHead = 0;
     eusartRxTail = 0;
     eusartRxCount = 0;
+    
+    
+    
+    
 }
 
 void EUSART_Write(uint8_t txData)
@@ -203,6 +211,11 @@ void EUSART_Receive_ISR(void)
 
         RCSTAbits.CREN = 0;
         RCSTAbits.CREN = 1;
+        
+        while (1)
+        {
+            
+        }
     }
 
     // buffer overruns are ignored

@@ -162,7 +162,7 @@ lin_state_t LIN_Master_handler(void){
                 lf.length = LIN_rxPacket.rxLength;
                 memcpy(lf.data,LIN_rxPacket.data,lf.length);
                 
-                slcanReciveCanFrame(&lf);
+                slcanReciveCanFrame(&lf, 'M');
                 LIN_state = LIN_IDLE;
             }
             break;

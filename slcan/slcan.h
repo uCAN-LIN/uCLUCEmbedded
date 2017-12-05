@@ -43,7 +43,7 @@ typedef union {
     uint8_t rawPacket[13];
 }sl_lin_packet_t;
 
-uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg);
+uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg, uint8_t prefix);
 int slCanProccesInput(uint8_t ch);
 void slCanCheckCommand();
 

@@ -51,7 +51,7 @@
                          Main application
  */
 
-uint8_t lin_checksum_type = 'c';
+uint8_t lin_checksum_type = 'x';
 
 void UserApplication(void)
 {

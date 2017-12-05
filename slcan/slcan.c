@@ -149,12 +149,12 @@ static uint8_t parseHex(uint8_t* line, uint8_t len, uint32_t* value) {
 void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master){
     //Build Packet - LIN required data
     //Add Break
-    LIN_sendBreak();
-    LIN_EUSART_Write(0x00); //send dummy transmission
+//    LIN_sendBreak();
+//    LIN_EUSART_Write(0x00); //send dummy transmission
     //Add Preamble
-    LIN_EUSART_Write(0x55);
+//    LIN_EUSART_Write(0x55);
     //Add ID
-    LIN_EUSART_Write(LIN_packet_master.PID);
+//    LIN_EUSART_Write(LIN_packet_master.PID);
     //Build Packet - User defined data
     //add data
     for(uint8_t i = 0; i < LIN_packet_master.length; i++){
@@ -318,12 +318,13 @@ void slCanCheckCommand()
  * 			step Current step
  * @retval Next character to print out
  */
-uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg)
+uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg, uint8_t prefix)
 {
 	uint8_t i;
 
     // @TODO check lin frame type
-    slcanSetOutputChar('T');
+    slcanSetOutputChar(prefix);
+
     slcanSetOutputAsHex(pRxMsg->PID);
 	slCanSendNibble(pRxMsg->length);
 	if (pRxMsg->length > 0)

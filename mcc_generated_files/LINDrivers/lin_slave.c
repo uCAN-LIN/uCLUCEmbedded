@@ -42,14 +42,14 @@
 #include "../../slcan/slcan.h"
 #include "../../mcc_generated_files/usb/usb_device_cdc.h"
 
-#define READ_TIMEOUT    15  //ms
+#define READ_TIMEOUT    10  //ms
 
 lin_packet_t LIN_packet;
 bool LIN_rxInProgress = false;
 const lin_rx_cmd_t* LIN_rxCommand;
 uint8_t LIN_rxCommandLength;
 
-static uint8_t LIN_timeout = 10; //TODO: Make dependent on Baudrate
+static uint8_t LIN_timeout = 30; //TODO: Make dependent on Baudrate
 static bool LIN_timerRunning = false;
 static volatile uint8_t CountCallBack = 0;
 
@@ -108,7 +108,7 @@ lin_rx_state_t LIN_Slave_handler(void) {
     if (LIN_rxInProgress == true) {
         if (LIN_timerRunning == false) {
             //Timeout
-            LIN_rxState = LIN_RX_ERROR;
+//            LIN_rxState = LIN_RX_ERROR;
         }
     }
 
@@ -124,12 +124,14 @@ lin_rx_state_t LIN_Slave_handler(void) {
             break;
         case LIN_RX_BREAK:
             if (LIN_EUSART_DataReady > 0) {
-//                if (LIN_breakCheck() == true) { //Read Break
+                if (LIN_breakCheck() == true) { //Read Break
                     LIN_rxState = LIN_RX_SYNC;
-//                } else {
-//                    LIN_rxState = LIN_RX_ERROR;
-//                }
-            DBG("@");
+                    DBG("@1");
+                } else {
+                    LIN_rxState = LIN_RX_ERROR;
+                    DBG("@2");
+                }
+//                LIN_EUSART_Read(); // read break
             }
             break;
         case LIN_RX_SYNC:
@@ -145,55 +147,48 @@ lin_rx_state_t LIN_Slave_handler(void) {
         case LIN_RX_PID:
             if (LIN_EUSART_DataReady > 0) {
                 LIN_packet.PID = LIN_EUSART_Read();
-
-                //check LIN Parity bits
-                //ll receive all data 
-                // if(LIN_checkPID(LIN_packet.PID) == false){
-                //    LIN_rxState = LIN_RX_ERROR;
-                //    break;
-                //}
-                //LIN_packet.type = LIN_getFromTable(LIN_packet.PID, TYPE);
-                //if(LIN_packet.type == RECEIVE){
-                //                    LIN_packet.length = LIN_getFromTable(LIN_packet.PID, LENGTH);
                 LIN_rxState = LIN_RX_DATA;
-                LIN_packet.length = 8; // len always max then check for timeout
-                
-                //}
-                //else{
-                //    LIN_disableRx();
-                //    LIN_rxState = LIN_RX_TX_DATA;
-                //}
+                LIN_packet.length = 8; // len always max then check for timeout                
                 DBG("$");
             }
             break;
         case LIN_RX_DATA:
-            //if (LIN_EUSART_DataReady > 0) 
             {
-                extern uint8_t EUSART_read_timeout;
-                uint8_t uart_rx_byte = LIN_EUSART_Read();
-                if (EUSART_read_timeout == 0)
-                {
-                    LIN_packet.data[rxDataIndex] = uart_rx_byte;
-                    if (++rxDataIndex >= LIN_packet.length) {
-                        //received all data bytes
-                        rxDataIndex = 0;
-                        LIN_rxState = LIN_RX_CHECKSUM;
-                    }
-                    DBG("%");
-                } else 
-                {
-                    // frame was shorter then 8 bits go to checksum
-                    LIN_packet.length = rxDataIndex - 1;
-                    LIN_packet.checksum = LIN_packet.data[rxDataIndex-1]; 
-                    if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
-                        DBG("^");
-                        LIN_rxState = LIN_RX_ERROR;
-                    } else {
-                        DBG("&");
-                        LIN_rxState = LIN_RX_ERROR;
-                        slcanReciveCanFrame(&LIN_packet);
-                    }  
-                }
+            extern uint8_t EUSART_read_timeout;
+            uint8_t uart_rx_byte = LIN_EUSART_Read();
+//            if ((LIN_breakCheck() == true))
+//            {
+//                DBG("%0");
+//                goto LIN_PACKET_TOTAL;
+//            }
+            if (EUSART_read_timeout == 0)
+            {
+                DBG("%1");
+                LIN_packet.data[rxDataIndex] = uart_rx_byte;
+                if (++rxDataIndex >= LIN_packet.length) {
+                    DBG("_");
+                    //received all data bytes
+                    rxDataIndex = 0;
+                    LIN_rxState = LIN_RX_CHECKSUM;
+                } 
+            } else 
+            {
+LIN_PACKET_TOTAL:
+                DBG("%2");
+                // frame was shorter then 8 bits go to checksum
+                LIN_packet.length = rxDataIndex - 1;
+                LIN_packet.checksum = LIN_packet.data[rxDataIndex-1]; 
+                if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
+                    DBG("^");
+                    LIN_rxState = LIN_RX_ERROR;
+                    slcanReciveCanFrame(&LIN_packet, 't');
+                } else {
+                    DBG("&");
+                    LIN_rxState = LIN_RX_ERROR;
+                    slcanReciveCanFrame(&LIN_packet, 'T');
+                }  
+            }
+            }
             break;
         case LIN_RX_CHECKSUM:
             if (LIN_EUSART_DataReady > 0) {
@@ -201,10 +196,11 @@ lin_rx_state_t LIN_Slave_handler(void) {
                 LIN_packet.checksum = LIN_EUSART_Read();
                 if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
                     LIN_rxState = LIN_RX_ERROR;
+                    slcanReciveCanFrame(&LIN_packet, 't');
                     DBG("(");
                 } else {
                     LIN_rxState = LIN_RX_ERROR;
-                    slcanReciveCanFrame(&LIN_packet);
+                    slcanReciveCanFrame(&LIN_packet, 'T');
                 }
             }
             break;
@@ -213,9 +209,8 @@ lin_rx_state_t LIN_Slave_handler(void) {
             LIN_rxState = LIN_RX_RDY;
         case LIN_RX_RDY:
             DBG(")");
-            slcanReciveCanFrame(&LIN_packet);
+            slcanReciveCanFrame(&LIN_packet, '?');
         case LIN_RX_ERROR:
-            
             DBG("_");
             LIN_stopTimer();
             LIN_EUSART_Restart();
@@ -233,7 +228,6 @@ lin_rx_state_t LIN_Slave_handler(void) {
             break;
     }
     return LIN_rxState;
-}
 }
 
 void LIN_sendPacket(uint8_t length, uint8_t pid, uint8_t* data) {
