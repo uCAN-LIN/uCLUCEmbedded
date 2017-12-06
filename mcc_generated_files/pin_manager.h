@@ -65,6 +65,37 @@
 // get/set RA1 procedures
 #define RA1_GetValue()         PORTAbits.RA1
 
+// get/set IO_RA4 aliases
+#define IO_RA4_TRIS               TRISAbits.TRISA4
+#define IO_RA4_LAT                LATAbits.LATA4
+#define IO_RA4_PORT               PORTAbits.RA4
+#define IO_RA4_WPU                WPUAbits.WPUA4
+#define IO_RA4_ANS                ANSELAbits.ANSA4
+#define IO_RA4_SetHigh()            do { LATAbits.LATA4 = 1; } while(0)
+#define IO_RA4_SetLow()             do { LATAbits.LATA4 = 0; } while(0)
+#define IO_RA4_Toggle()             do { LATAbits.LATA4 = ~LATAbits.LATA4; } while(0)
+#define IO_RA4_GetValue()           PORTAbits.RA4
+#define IO_RA4_SetDigitalInput()    do { TRISAbits.TRISA4 = 1; } while(0)
+#define IO_RA4_SetDigitalOutput()   do { TRISAbits.TRISA4 = 0; } while(0)
+#define IO_RA4_SetPullup()      do { WPUAbits.WPUA4 = 1; } while(0)
+#define IO_RA4_ResetPullup()    do { WPUAbits.WPUA4 = 0; } while(0)
+#define IO_RA4_SetAnalogMode()  do { ANSELAbits.ANSA4 = 1; } while(0)
+#define IO_RA4_SetDigitalMode() do { ANSELAbits.ANSA4 = 0; } while(0)
+
+// get/set IO_RC3 aliases
+#define IO_RC3_TRIS               TRISCbits.TRISC4
+#define IO_RC3_LAT                LATCbits.LATC3
+#define IO_RC3_PORT               PORTCbits.RC3
+#define IO_RC3_ANS                ANSELCbits.ANSC3
+#define IO_RC3_SetHigh()            do { LATCbits.LATC3 = 1; } while(0)
+#define IO_RC3_SetLow()             do { LATCbits.LATC3 = 0; } while(0)
+#define IO_RC3_Toggle()             do { LATCbits.LATC3 = ~LATCbits.LATC3; } while(0)
+#define IO_RC3_GetValue()           PORTCbits.RC3
+#define IO_RC3_SetDigitalInput()    do { TRISCbits.TRISC4 = 1; } while(0)
+#define IO_RC3_SetDigitalOutput()   do { TRISCbits.TRISC4 = 0; } while(0)
+#define IO_RC3_SetAnalogMode()  do { ANSELCbits.ANSC3 = 1; } while(0)
+#define IO_RC3_SetDigitalMode() do { ANSELCbits.ANSC3 = 0; } while(0)
+
 // get/set RC4 procedures
 #define RC4_SetHigh()    do { LATCbits.LATC4 = 1; } while(0)
 #define RC4_SetLow()   do { LATCbits.LATC4 = 0; } while(0)
