@@ -4,17 +4,12 @@
  *  Created on: Apr 2, 2016
  *      Author: Vostro1440
  */
-
-
 #include "string.h"
 #include "slcan.h"
 #include "./../mcc_generated_files/LINDrivers/lin_slave.h"
 #include "./../mcc_generated_files/LINDrivers/lin_master.h"
 #include "./../mcc_generated_files/mcc.h"
 #include "./../mcc_generated_files/LINDrivers/lin_hardware.h"
-
-
-
 
 #define SLCAN_BELL 7
 #define SLCAN_CR 13
@@ -25,7 +20,6 @@
 #define STATE_OPEN 2
 
 #define HAL_OK 1
-
 
 volatile int32_t serialNumber;
 // internal slcan_interface state
@@ -98,6 +92,17 @@ static void slcanOutputFlush(void)
     sl_frame_len = 0;
 }
 
+void slCanHandler(void)
+{
+    if (state = STATE_OPEN)
+    {
+        if (lin_type == LIN_MASTER)
+            LIN_Master_handler();
+        else 
+            LIN_Slave_handler();
+    }
+}
+
 /**
   * @brief  Add to input buffer data from interfaces
   * @param  ch - data to add
@@ -146,22 +151,28 @@ static uint8_t parseHex(uint8_t* line, uint8_t len, uint32_t* value) {
     return 1;
 }
 
-void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master){
-    //Build Packet - LIN required data
-    //Add Break
-//    LIN_sendBreak();
-//    LIN_EUSART_Write(0x00); //send dummy transmission
-    //Add Preamble
-//    LIN_EUSART_Write(0x55);
-    //Add ID
-//    LIN_EUSART_Write(LIN_packet_master.PID);
-    //Build Packet - User defined data
-    //add data
-    for(uint8_t i = 0; i < LIN_packet_master.length; i++){
-        LIN_EUSART_Write(LIN_packet_master.data[i]);
+void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master, bool send_header){
+    
+    if (send_header == true)
+    {
+        //Add Break
+        LIN_sendBreak();
+        LIN_EUSART_Write(0x00); //send dummy transmission
+        //Add Preamble
+        LIN_EUSART_Write(0x55);
+        //Add ID
+        LIN_EUSART_Write(LIN_packet_master.PID);
+        //Build Packet - User defined data
     }
-    //Add Checksum
-    LIN_EUSART_Write(LIN_packet_master.checksum);
+    //add data 
+    if (LIN_packet_master.length > 0)
+    {
+        for(uint8_t i = 0; i < LIN_packet_master.length; i++){
+            LIN_EUSART_Write(LIN_packet_master.data[i]);
+        }
+        //Add Checksum
+        LIN_EUSART_Write(LIN_packet_master.checksum);
+    }    
 }
 
 /**
@@ -169,33 +180,29 @@ void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master){
  * @param  line Line string which contains the transmit command
  * @retval HAL status
  */
-static uint8_t transmitStd(uint8_t* line) {
+static uint8_t transmitStd(uint8_t* line, bool lin_header) {
     uint32_t temp;
     lin_packet_t pck;
     
     // id
     if (!parseHex(&line[1], 2, &temp)) return 0;
-    pck.PID = LIN_calcParity(temp); // add parity
-    // type
-    if (!parseHex(&line[3], 1, &temp)) return 0;
-    //pck.type = temp;
-//    pck.type = TRANSMIT;
+        pck.PID = LIN_calcParity(temp); // add parity
     // len
-    if (!parseHex(&line[4], 1, &temp)) return 0;
+    if (!parseHex(&line[3], 1, &temp)) return 0;
     pck.length = temp;
     
     if (pck.length > 8) return 0;
 
     uint8_t i;
     for (i = 0; i < pck.length; i++) {
-        if (!parseHex(&line[5 + i*2], 2, &temp)) return 0;
+        if (!parseHex(&line[4 + i*2], 2, &temp)) return 0;
         pck.data[i] = temp;
     }
     //Add Checksum
     pck.checksum = LIN_getChecksum(pck.length,pck.PID, pck.data);
   
     LIN_disableRx();  
-    LIN_sendHeaderPacket(pck);
+    LIN_sendHeaderPacket(pck, lin_header);
     LIN_enableRx();
     
     return 1;
@@ -277,13 +284,21 @@ void slCanCheckCommand()
             state = STATE_CONFIG;
             result = terminator;
             break;
-        case 'r': // Transmit standard RTR (11 bit) frame
-        case 'R': // Transmit extended RTR (29 bit) frame
-        case 't': // Transmit standard (11 bit) frame
-        case 'T': // Transmit extended (29 bit) frame
-//            if (state == STATE_OPEN)
+        case 'r': // Transmit response    
+        case 'R': 
+            if (state == STATE_OPEN)
+            {   
+                if (transmitStd(line, false) == HAL_OK) {
+                    if (line[0] < 'Z') slcanSetOutputChar('Z');
+                    else slcanSetOutputChar('z');
+                    result = terminator;
+                }
+            }   
+        case 't': // Transmit full frame
+        case 'T': 
+            if (state == STATE_OPEN)
             {
-                if (transmitStd(line) == HAL_OK) {
+                if (transmitStd(line, true) == HAL_OK) {
                     if (line[0] < 'Z') slcanSetOutputChar('Z');
                     else slcanSetOutputChar('z');
                     result = terminator;
@@ -321,11 +336,17 @@ void slCanCheckCommand()
 uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg, uint8_t prefix)
 {
 	uint8_t i;
-
+    lin_pid_t pid;
+    
     // @TODO check lin frame type
     slcanSetOutputChar(prefix);
 
-    slcanSetOutputAsHex(pRxMsg->PID);
+    
+    pid.rawPID = pRxMsg->PID;
+    pid.P0 = 0;
+    pid.P1 = 0;
+    
+    slcanSetOutputAsHex(pid.rawPID);
 	slCanSendNibble(pRxMsg->length);
 	if (pRxMsg->length > 0)
 	{

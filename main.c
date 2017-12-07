@@ -55,26 +55,21 @@ uint8_t lin_checksum_type = 'x';
 
 void UserApplication(void)
 {
-    if (lin_type == LIN_MASTER)
-         LIN_Master_handler();
-     else 
-         LIN_Slave_handler();
-
-     {
-         static uint8_t buffer[LINE_MAXLEN];
-         uint8_t numBytes;
-         numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
-         if(numBytes > 0)
-         {
-             for (uint8_t i = 0; i < numBytes; i++)
-             {
-                 if (slCanProccesInput(buffer[i]))
-                 {
-                     slCanCheckCommand();
-                 }
-             }
-         }
-     }
+    static uint8_t buffer[LINE_MAXLEN];
+    uint8_t numBytes;
+    
+    slCanHandler();
+    numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
+    if(numBytes > 0)
+    {
+        for (uint8_t i = 0; i < numBytes; i++)
+        {
+            if (slCanProccesInput(buffer[i]))
+            {
+                slCanCheckCommand();
+            }
+        }
+    }
 }
 
 void main(void)

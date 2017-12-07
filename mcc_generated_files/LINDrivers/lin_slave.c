@@ -131,7 +131,6 @@ lin_rx_state_t LIN_Slave_handler(void) {
                     LIN_rxState = LIN_RX_ERROR;
                     DBG("@2");
                 }
-//                LIN_EUSART_Read(); // read break
             }
             break;
         case LIN_RX_SYNC:

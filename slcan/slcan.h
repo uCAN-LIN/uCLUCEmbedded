@@ -46,6 +46,7 @@ typedef union {
 uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg, uint8_t prefix);
 int slCanProccesInput(uint8_t ch);
 void slCanCheckCommand();
+void slCanHandler(void);
 
 typedef enum {
     LIN_MASTER,
