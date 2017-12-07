@@ -55,7 +55,7 @@ static volatile uint8_t CountCallBack = 0;
 
 
 
-void LIN_init(void (*processData)) {
+void LIN_Slave_Initialize() {
     
     LIN_stopTimer();
     LIN_enableRx();

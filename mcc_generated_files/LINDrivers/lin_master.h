@@ -39,9 +39,12 @@
 
 #ifndef LIN_MASTER_H
 #define	LIN_MASTER_H
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+
+#define MAX_LIN_SLAVE_COUNT 15u
 
 typedef enum {
     LIN_IDLE,
@@ -101,7 +104,7 @@ typedef union {
 
 //Set up schedule table timings
 
-void LIN_Master_init(uint8_t tableLength);
+void LIN_Master_init(void);
 
 void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data);
 
@@ -134,10 +137,12 @@ void LIN_enableRx(void);
 
 void LIN_disableRx(void);
 
-void LIN_sendBreak(void);
-
 void LIN_sendPeriodicTx(void);
 
+void LIN_Master_Set_Table_Row(void *pck);
+
+extern uint8_t scheduleLength;
+extern uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
 
 #endif	/* LIN_MASTER_H */
 

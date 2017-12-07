@@ -21,7 +21,7 @@
 
 #define HAL_OK 1
 
-volatile int32_t serialNumber;
+const int32_t serialNumber = 5;
 // internal slcan_interface state
 static uint8_t state = STATE_CONFIG;
 static uint8_t timestamping = 0;
@@ -29,6 +29,8 @@ static uint8_t timestamping = 0;
 LinType_t lin_type = LIN_SLAVE;
 
 static uint8_t terminator = SLCAN_CR;
+
+extern lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT];
 
 uint8_t sl_frame[LINE_MAXLEN];
 uint8_t sl_frame_len=0;
@@ -94,7 +96,7 @@ static void slcanOutputFlush(void)
 
 void slCanHandler(void)
 {
-    if (state = STATE_OPEN)
+    if (state == STATE_OPEN)
     {
         if (lin_type == LIN_MASTER)
             LIN_Master_handler();
@@ -156,7 +158,7 @@ void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master, bool send_header){
     if (send_header == true)
     {
         //Add Break
-        LIN_sendBreak();
+        LIN_SENDB = 1;
         LIN_EUSART_Write(0x00); //send dummy transmission
         //Add Preamble
         LIN_EUSART_Write(0x55);
@@ -173,6 +175,43 @@ void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master, bool send_header){
         //Add Checksum
         LIN_EUSART_Write(LIN_packet_master.checksum);
     }    
+}
+
+//ID0 ID1 LEN0 
+static uint8_t addLinMasterRow(uint8_t* line, bool resetTable) {
+    uint32_t temp;
+    lin_cmd_packet_t pck;
+    
+    if (resetTable)
+    {
+        scheduleLength = 0;
+        return 0;
+    }
+    
+    // id
+    if (!parseHex(&line[1], 2, &temp)) return 0;
+    pck.cmd = temp; // add parity
+    // len
+    if (!parseHex(&line[3], 1, &temp)) return 0;
+    pck.length = temp;
+    if (pck.length > 8) return 0;
+    // type
+    if (!parseHex(&line[4], 1, &temp)) return 0;
+    pck.type = temp;
+    // data
+    pck.data = (uint8_t*)(LIN_Master_Data + scheduleLength * sizeof(lin_cmd_packet_t));
+    // period
+    if (!parseHex(&line[5], 2, &temp)) return 0;
+    pck.period = temp;
+    // timeout
+    if (!parseHex(&line[7], 2, &temp)) return 0;
+    pck.timeout = temp;
+
+    LIN_Master_Set_Table_Row(&pck);
+//    LIN_Master_Set_Table_Row(&pck);
+     
+    scheduleLength ++;
+    return 1;
 }
 
 /**
@@ -266,42 +305,72 @@ void slCanCheckCommand()
             }
             break;
         case 'o':
-        case 'O': // Open CAN channel
+        case 'O': // Open LIN channel
             result = terminator;
             state = STATE_OPEN;
             break;
-        case 'l': // Loop-back mode CAN
-            LIN_Slave_Initialize();
-            result = terminator;
-            lin_type = LIN_SLAVE;
+        case 'l': // Slave mode
+            if (state == STATE_CONFIG) 
+            {
+                LIN_Slave_Initialize();
+                result = terminator;
+                lin_type = LIN_SLAVE;
+            }
             break;
-        case 'L': // Open CAN channel in listen-only mode
-            LIN_Master_init(lin_master_table_last_index);
-            result = terminator;
-            lin_type = LIN_MASTER;
+        case 'L': // master mode
+            if (state == STATE_CONFIG) 
+            {
+                LIN_Master_init();
+                result = terminator;
+                lin_type = LIN_MASTER;
+            }
             break;
-        case 'C': // Close CAN channel
+        case 'C': // Close LIN channel
             state = STATE_CONFIG;
             result = terminator;
             break;
         case 'r': // Transmit response    
         case 'R': 
-            if (state == STATE_OPEN)
-            {   
-                if (transmitStd(line, false) == HAL_OK) {
-                    if (line[0] < 'Z') slcanSetOutputChar('Z');
-                    else slcanSetOutputChar('z');
+            if (lin_type == LIN_MASTER)
+            {
+                if (state == STATE_CONFIG)
+                {
+                    addLinMasterRow(line,false);
+                    slcanSetOutputChar('z');
                     result = terminator;
                 }
-            }   
+            } else 
+            {
+                if (state == STATE_OPEN)
+                {   
+                    if (transmitStd(line, false) == HAL_OK) {
+                        if (line[0] < 'Z') slcanSetOutputChar('Z');
+                        else slcanSetOutputChar('z');
+                        result = terminator;
+                    }
+                }   
+            }
         case 't': // Transmit full frame
         case 'T': 
-            if (state == STATE_OPEN)
+            if (lin_type == LIN_MASTER)
             {
-                if (transmitStd(line, true) == HAL_OK) {
-                    if (line[0] < 'Z') slcanSetOutputChar('Z');
-                    else slcanSetOutputChar('z');
-                    result = terminator;
+                if (state == STATE_CONFIG) 
+                {
+                    if (addLinMasterRow(line,false) == HAL_OK)
+                    {
+                        slcanSetOutputChar('z');
+                        result = terminator;
+                    }
+                }
+            } else 
+            {
+                if (state == STATE_OPEN)
+                {
+                    if (transmitStd(line, true) == HAL_OK) {
+                        if (line[0] < 'Z') slcanSetOutputChar('Z');
+                        else slcanSetOutputChar('z');
+                        result = terminator;
+                    }
                 }
             }
             break;

@@ -44,14 +44,15 @@
 #include "../../slcan/slcan.h"
 
 static lin_packet_t LIN_packet;
+static bool LIN_timerRunning = false;
 static lin_rxpacket_t LIN_rxPacket;
 bool LIN_txReady = false;
 lin_cmd_packet_t* schedule;
-uint8_t scheduleLength;
+uint8_t scheduleLength = 0;
 
 static uint8_t LIN_timeout = 10;
 static uint8_t LIN_period = 0;
-static bool LIN_timerRunning = false;
+static bool LIN_timerRscheduleLengthunning = false;
 static bool LIN_enablePeriodTx = false;
 static volatile uint8_t LIN_timerCallBack = 0;
 static volatile uint8_t LIN_periodCallBack = 0;
@@ -59,14 +60,23 @@ static volatile uint8_t LIN_periodCallBack = 0;
 uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
 lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT];
 
-void LIN_Master_init(uint8_t tableLength){
+void LIN_Master_init(){
     schedule = scheduleTable;
-    scheduleLength = tableLength;
+    
     LIN_stopTimer();
     LIN_Master_setTimerHandler();
 
     LIN_startPeriod();
 }
+
+void LIN_Master_Set_Table_Row(void *pck)
+{
+    memcpy(&(scheduleTable[scheduleLength]),pck,sizeof(lin_cmd_packet_t));
+}
+//void LIN_Master_Set_Table_Row(lin_cmd_packet_t* pck)
+//{
+//    memcpy(&(scheduleTable[scheduleLength]),pck,sizeof(lin_cmd_packet_t));
+//}
 
 void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data){
     const lin_cmd_packet_t* tempSchedule = schedule;    //copy table pointer so we can modify it
@@ -191,7 +201,7 @@ bool LIN_receivePacket(void){
 void LIN_sendMasterPacket(void){
     //Build Packet - LIN required data
     //Add Break
-    LIN_sendBreak();
+    LIN_SENDB = 1;
     LIN_EUSART_Write(0x00); //send dummy transmission
     //Add Preamble
     LIN_EUSART_Write(0x55);
@@ -209,53 +219,6 @@ void LIN_sendMasterPacket(void){
     }
 }
 
-//uint8_t LIN_getPacket(uint8_t* data){
-//    uint8_t cmd = LIN_rxPacket.cmd & 0x3F;
-//    
-//    memcpy(data, LIN_rxPacket.data, sizeof(LIN_rxPacket.data));
-//    memset(LIN_rxPacket.rawPacket, 0, sizeof(LIN_rxPacket.rawPacket));  //clear receive data
-//
-//    return cmd;
-//}
-//
-//uint8_t LIN_calcParity(uint8_t CMD){
-//    lin_pid_t PID;
-//    PID.rawPID = CMD;
-//
-//    //Workaround for compiler bug:
-////    PID.P0 = PID.ID0 ^ PID.ID1 ^ PID.ID2 ^ PID.ID4;
-////    PID.P1 = ~(PID.ID1 ^ PID.ID3 ^ PID.ID4 ^ PID.ID5);
-//    PID.P0 = PID.ID0 ^ PID.ID1;
-//    PID.P0 = PID.P0 ^ PID.ID2;
-//    PID.P0 = PID.P0 ^ PID.ID4;
-//    PID.P1 = PID.ID1 ^ PID.ID3;
-//    PID.P1 = PID.P1 ^ PID.ID4;
-//    PID.P1 = PID.P1 ^ PID.ID5;
-//    PID.P1 = ~PID.P1;
-//    
-//    return PID.rawPID;
-//}
-//
-//uint8_t LIN_getChecksum(uint8_t length, uint8_t* data){
-//    uint16_t checksum = 0;
-//    
-//    for (uint8_t i = 0; i < length; i++){
-//        checksum = checksum + *data++;
-//        if(checksum > 0xFF)
-//            checksum -= 0xFF;
-//    }
-//    checksum = ~checksum;
-//    
-//    return (uint8_t)checksum;
-//}
-//
-//void LIN_startTimer(uint8_t timeout){
-//    LIN_timeout = timeout;
-//    LIN_WriteTimer(0);
-//    LIN_StartTimer();
-//    LIN_timerRunning = true;
-//}
-//
 void LIN_Master_timerHandler(void){
 
     if(LIN_timerRunning == true){
@@ -301,10 +264,6 @@ void LIN_stopPeriod(void){
 //    LIN_CREN = 0;
 //    LIN_RCIE = 0;
 //}
-
-void LIN_sendBreak(void){
-    LIN_SENDB = 1;
-}
 
 void LIN_sendPeriodicTx(void){
     static volatile uint8_t scheduleIndex = 0;

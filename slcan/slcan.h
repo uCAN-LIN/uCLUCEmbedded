@@ -53,8 +53,6 @@ typedef enum {
     LIN_SLAVE
 } LinType_t ;
 
-
-
 extern LinType_t lin_type;
 
 #endif /* SLCAN_PORT_H_ */

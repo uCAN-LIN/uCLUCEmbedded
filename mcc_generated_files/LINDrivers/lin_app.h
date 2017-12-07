@@ -47,38 +47,8 @@
 #include "lin_slave.h"
 #include "lin_master.h"
 
-#define MAX_LIN_SLAVE_COUNT 15
-
-extern uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
-//extern lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT]; 
-//= {
-//    //Command, Type, TX/RX Length, Timeout, Period, Data Address
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 100, 0, &LIN_Master_Data[0] },
-//    {LIN_MASTER_DEF_ID, TRANSMIT, 8, 0, 10, &LIN_Master_Data[8] },
-//    {LIN_MASTER_DEF_ID, TRANSMIT, 8, 0, 10, &LIN_Master_Data[16] },
-//    {LIN_MASTER_DEF_ID, TRANSMIT, 8, 0, 10, &LIN_Master_Data[24] },
-//    {LIN_MASTER_DEF_ID, TRANSMIT, 8, 0, 10, &LIN_Master_Data[32] },
-//    {LIN_MASTER_DEF_ID, TRANSMIT, 8, 0, 10, &LIN_Master_Data[40] },
-//    {LIN_MASTER_DEF_ID, TRANSMIT, 8, 0, 10, &LIN_Master_Data[48] },
-//    {LIN_MASTER_DEF_ID, TRANSMIT, 8, 0, 10, &LIN_Master_Data[56] },
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 0, 10, &LIN_Master_Data[64] },
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 0, 10, &LIN_Master_Data[72] },
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 0, 10, &LIN_Master_Data[80] },
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 0, 10, &LIN_Master_Data[88] },
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 0, 10, &LIN_Master_Data[96] },
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 0, 10, &LIN_Master_Data[104] },
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 0, 10, &LIN_Master_Data[112] },
-//    {LIN_MASTER_DEF_ID, RECEIVE, 8, 0, 10, &LIN_Master_Data[120] },
-//};
-#define TABLE_SIZE  (sizeof(scheduleTable)/sizeof(lin_cmd_packet_t))
-
-extern uint8_t lin_master_table_last_index;
-
 void LIN_Slave_Initialize(void);
-
-
 void processLIN(void);
-
 
 #endif	/* LIN_APP_H */
 
