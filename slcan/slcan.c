@@ -177,6 +177,12 @@ void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master, bool send_header){
     }    
 }
 
+static uint8_t wakeUpLin(void)
+{
+    LIN_SENDB = 1;
+    LIN_EUSART_Write(0x00); //send dummy transmission
+}
+
 //ID0 ID1 LEN0 
 static uint8_t addLinMasterRow(uint8_t* line, bool resetTable) {
     uint32_t temp;
@@ -380,8 +386,12 @@ void slCanCheckCommand()
                 result = terminator;
             }
             break;
-         case 'Z': // Set time stamping
+         case 'Z': // Call wakeup
             {
+                if (state == STATE_OPEN)
+                {
+                    wakeUpLin();
+                }
                 break;
             }
             break;
