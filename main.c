@@ -51,8 +51,6 @@
                          Main application
  */
 
-uint8_t lin_checksum_type = 'x';
-
 void UserApplication(void)
 {
     static uint8_t buffer[LINE_MAXLEN];
@@ -72,6 +70,8 @@ void UserApplication(void)
     }
 }
 
+extern LinType_t lin_type; 
+
 void main(void)
 {
     SYSTEM_Initialize();
@@ -79,7 +79,13 @@ void main(void)
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
 
-    LIN_Slave_Initialize();
+    if (lin_type == LIN_MASTER)
+    {
+        LIN_Master_init();
+    } else 
+    {
+        LIN_Slave_Initialize();
+    }
 
     while (1)
     {

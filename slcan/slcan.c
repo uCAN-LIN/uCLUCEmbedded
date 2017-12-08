@@ -23,10 +23,11 @@
 
 const int32_t serialNumber = 5;
 // internal slcan_interface state
-static uint8_t state = STATE_CONFIG;
+
 static uint8_t timestamping = 0;
 
-LinType_t lin_type = LIN_SLAVE;
+static uint8_t state = STATE_OPEN ;
+LinType_t lin_type = LIN_MASTER;
 
 static uint8_t terminator = SLCAN_CR;
 
@@ -153,7 +154,7 @@ static uint8_t parseHex(uint8_t* line, uint8_t len, uint32_t* value) {
     return 1;
 }
 
-void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master, bool send_header){
+void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master, bool send_header, bool send_data){
     
     if (send_header == true)
     {
@@ -167,13 +168,16 @@ void LIN_sendHeaderPacket(lin_packet_t LIN_packet_master, bool send_header){
         //Build Packet - User defined data
     }
     //add data 
-    if (LIN_packet_master.length > 0)
+    if (send_data)
     {
-        for(uint8_t i = 0; i < LIN_packet_master.length; i++){
-            LIN_EUSART_Write(LIN_packet_master.data[i]);
+        if (LIN_packet_master.length > 0)
+        {
+            for(uint8_t i = 0; i < LIN_packet_master.length; i++){
+                LIN_EUSART_Write(LIN_packet_master.data[i]);
+            }
+            //Add Checksum
+            LIN_EUSART_Write(LIN_packet_master.checksum);
         }
-        //Add Checksum
-        LIN_EUSART_Write(LIN_packet_master.checksum);
     }    
 }
 
@@ -225,7 +229,7 @@ static uint8_t addLinMasterRow(uint8_t* line, bool resetTable) {
  * @param  line Line string which contains the transmit command
  * @retval HAL status
  */
-static uint8_t transmitStd(uint8_t* line, bool lin_header) {
+static uint8_t transmitStd(uint8_t* line, bool lin_header, bool lin_data) {
     uint32_t temp;
     lin_packet_t pck;
     
@@ -247,7 +251,7 @@ static uint8_t transmitStd(uint8_t* line, bool lin_header) {
     pck.checksum = LIN_getChecksum(pck.length,pck.PID, pck.data);
   
     LIN_disableRx();  
-    LIN_sendHeaderPacket(pck, lin_header);
+    LIN_sendHeaderPacket(pck, lin_header, lin_data);
     LIN_enableRx();
     
     return 1;
@@ -335,13 +339,13 @@ void slCanCheckCommand()
             state = STATE_CONFIG;
             result = terminator;
             break;
-        case 'r': // Transmit response    
+        case 'r': // Transmit header
         case 'R': 
             if (lin_type == LIN_MASTER)
             {
                 if (state == STATE_CONFIG)
                 {
-                    addLinMasterRow(line,false);
+                    addLinMasterRow(line,true);
                     slcanSetOutputChar('z');
                     result = terminator;
                 }
@@ -349,13 +353,14 @@ void slCanCheckCommand()
             {
                 if (state == STATE_OPEN)
                 {   
-                    if (transmitStd(line, false) == HAL_OK) {
+                    if (transmitStd(line,true,false) == HAL_OK) {
                         if (line[0] < 'Z') slcanSetOutputChar('Z');
                         else slcanSetOutputChar('z');
                         result = terminator;
                     }
                 }   
             }
+            break;
         case 't': // Transmit full frame
         case 'T': 
             if (lin_type == LIN_MASTER)
@@ -372,7 +377,7 @@ void slCanCheckCommand()
             {
                 if (state == STATE_OPEN)
                 {
-                    if (transmitStd(line, true) == HAL_OK) {
+                    if (transmitStd(line, true, true) == HAL_OK) {
                         if (line[0] < 'Z') slcanSetOutputChar('Z');
                         else slcanSetOutputChar('z');
                         result = terminator;
@@ -391,6 +396,7 @@ void slCanCheckCommand()
                 if (state == STATE_OPEN)
                 {
                     wakeUpLin();
+                     result = terminator;
                 }
                 break;
             }

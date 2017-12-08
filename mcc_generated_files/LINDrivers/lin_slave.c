@@ -307,7 +307,7 @@ uint8_t LIN_calcParity(uint8_t CMD) {
     return PID.rawPID;
 }
 
-uint8_t extern lin_checksum_type;
+uint8_t lin_checksum_type = 'x';
 
 uint8_t LIN_getChecksum(uint8_t length, uint8_t pid, uint8_t* data) {
 

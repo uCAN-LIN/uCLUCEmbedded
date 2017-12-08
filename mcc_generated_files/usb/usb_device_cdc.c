@@ -52,7 +52,7 @@ please contact mla_licensing@microchip.com
 
 #ifndef FIXED_ADDRESS_MEMORY
     #define IN_DATA_BUFFER_ADDRESS_TAG @ 0x120
-    #define OUT_DATA_BUFFER_ADDRESS_TAG @ 0x320
+    #define OUT_DATA_BUFFER_ADDRESS_TAG @ 0x20
     #define CONTROL_BUFFER_ADDRESS_TAG  @ 0x220
 #endif
 

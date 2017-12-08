@@ -39,7 +39,6 @@
 
 #include "lin_master.h"
 #include "lin_hardware.h"
-#include "lin_slave.h"
 #include "lin_app.h"
 #include "../../slcan/slcan.h"
 
@@ -48,7 +47,8 @@ static bool LIN_timerRunning = false;
 static lin_rxpacket_t LIN_rxPacket;
 bool LIN_txReady = false;
 lin_cmd_packet_t* schedule;
-uint8_t scheduleLength = 0;
+
+
 
 static uint8_t LIN_timeout = 10;
 static uint8_t LIN_period = 0;
@@ -57,13 +57,31 @@ static bool LIN_enablePeriodTx = false;
 static volatile uint8_t LIN_timerCallBack = 0;
 static volatile uint8_t LIN_periodCallBack = 0;
 
-uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
-lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT];
+uint8_t scheduleLength = 2;
+uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT] = {5,4,0,0,0,0,0};
+lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT] = {
+//    {2, MASTER_TRANSMIT, 2, 10, 400, LIN_Master_Data},
+    {2, MASTER_RECEIVE, 2, 400, 100, &LIN_Master_Data[4]}
+};
+
+static void LIN_Master_startTimer(uint8_t timeout) {
+    LIN_timeout = timeout;
+    LIN_WriteTimer(0);
+    LIN_StartTimer();
+    LIN_timerRunning = true;
+}
+
+void LIN_Master_stopTimer(void) {
+    LIN_StopTimer();
+    // reset ticker counter
+    LIN_timerRunning = false;
+}
+
 
 void LIN_Master_init(){
     schedule = scheduleTable;
     
-    LIN_stopTimer();
+    LIN_Master_stopTimer();
     LIN_Master_setTimerHandler();
 
     LIN_startPeriod();
@@ -117,6 +135,9 @@ void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data){
 lin_state_t LIN_Master_handler(void){
     static lin_state_t LIN_state = LIN_IDLE;
     
+    if (scheduleLength == 0)
+        return;
+    
     //State Machine
     switch(LIN_state){
         case LIN_IDLE:
@@ -138,7 +159,7 @@ lin_state_t LIN_Master_handler(void){
                     //Packet transmitted
                     if(LIN_rxPacket.rxLength > 0){
                         //Need data returned?
-                        LIN_startTimer(LIN_rxPacket.timeout);
+                        LIN_Master_startTimer(LIN_rxPacket.timeout);
                         LIN_enableRx();   //enable EUSART rx
                         LIN_state = LIN_RX_IP;
                     } else {
@@ -153,7 +174,8 @@ lin_state_t LIN_Master_handler(void){
                 //Timeout
                 LIN_state = LIN_IDLE;
                 memset(LIN_rxPacket.rawPacket, 0, sizeof(LIN_rxPacket.rawPacket));  //clear receive data
-            } else if(LIN_EUSART_DataReady){
+            } else 
+                if(LIN_EUSART_DataReady){
                 if(LIN_receivePacket() == true){
                     //All data received and verified
                     LIN_disableRx();   //disable EUSART rx
@@ -162,9 +184,6 @@ lin_state_t LIN_Master_handler(void){
             }
             break;
         case LIN_MASTER_RX_RDY:
-            //Received Transmission
-            //ll //todo 
-            //slcan_handler
             {
                 sl_lin_packet_t lf;
                 lf.PID = LIN_rxPacket.cmd;
@@ -192,7 +211,7 @@ bool LIN_receivePacket(void){
         //calculate checksum
         if(LIN_EUSART_Read() == LIN_getChecksum(LIN_rxPacket.rxLength, LIN_rxPacket.cmd, LIN_rxPacket.data))
             return true;
-            
+         return true;   
     }
     //still receiving
     return false;
@@ -219,12 +238,14 @@ void LIN_sendMasterPacket(void){
     }
 }
 
+
+
 void LIN_Master_timerHandler(void){
 
     if(LIN_timerRunning == true){
         if (++LIN_timerCallBack >= LIN_timeout){
             // ticker function call
-            LIN_stopTimer();
+            LIN_Master_stopTimer();
         }
     }
     if(LIN_enablePeriodTx == true){
@@ -238,12 +259,6 @@ void LIN_Master_timerHandler(void){
 void LIN_Master_setTimerHandler(void){
     LIN_SetInterruptHandler(LIN_Master_timerHandler);
 }
-//
-//void LIN_stopTimer(void){
-//    // reset ticker counter
-//    LIN_timerCallBack = 0;
-//    LIN_timerRunning = false;
-//}
 
 void LIN_startPeriod(void){
     LIN_enablePeriodTx = true;
@@ -254,16 +269,6 @@ void LIN_stopPeriod(void){
     LIN_periodCallBack = 0;
     LIN_enablePeriodTx = false;
 }
-
-//void LIN_enableRx(void){
-//    LIN_CREN = 1;
-//    LIN_RCIE = 1;
-//}
-//
-//void LIN_disableRx(void){
-//    LIN_CREN = 0;
-//    LIN_RCIE = 0;
-//}
 
 void LIN_sendPeriodicTx(void){
     static volatile uint8_t scheduleIndex = 0;
