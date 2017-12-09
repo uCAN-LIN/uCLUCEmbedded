@@ -26,7 +26,7 @@ const int32_t serialNumber = 5;
 
 static uint8_t timestamping = 0;
 
-static uint8_t state = STATE_OPEN ;
+static uint8_t state = STATE_CONFIG ;
 LinType_t lin_type = LIN_MASTER;
 
 static uint8_t terminator = SLCAN_CR;
@@ -216,7 +216,16 @@ static uint8_t addLinMasterRow(uint8_t* line, bool resetTable) {
     // timeout
     if (!parseHex(&line[7], 2, &temp)) return 0;
     pck.timeout = temp;
-
+    
+    if (pck.type == MASTER_TRANSMIT)
+    {
+        for (uint8_t i = 0; i < pck.length; i++)
+        {
+            if (!parseHex(&line[7+i*2], 2, &temp)) return 0;
+            pck.data[i] = temp;
+        }
+    }
+        
     LIN_Master_Set_Table_Row(&pck);
 //    LIN_Master_Set_Table_Row(&pck);
      

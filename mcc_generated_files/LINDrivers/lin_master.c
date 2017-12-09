@@ -57,11 +57,13 @@ static bool LIN_enablePeriodTx = false;
 static volatile uint8_t LIN_timerCallBack = 0;
 static volatile uint8_t LIN_periodCallBack = 0;
 
-uint8_t scheduleLength = 2;
+uint8_t scheduleLength = 1;
 uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT] = {5,4,0,0,0,0,0};
 lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT] = {
-//    {2, MASTER_TRANSMIT, 2, 10, 400, LIN_Master_Data},
-    {2, MASTER_RECEIVE, 2, 400, 100, &LIN_Master_Data[4]}
+    {1, MASTER_TRANSMIT, 2, 10, 400, LIN_Master_Data},
+//    {2, MASTER_RECEIVE, 2, 400, 100, &LIN_Master_Data[4]},
+//    {3, MASTER_TRANSMIT, 2, 10, 400, LIN_Master_Data},
+//    {4, MASTER_TRANSMIT, 2, 10, 400, LIN_Master_Data}
 };
 
 static void LIN_Master_startTimer(uint8_t timeout) {
