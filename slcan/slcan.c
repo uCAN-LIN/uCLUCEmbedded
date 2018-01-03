@@ -26,7 +26,7 @@ const int32_t serialNumber = 5;
 
 static uint8_t timestamping = 0;
 
-static uint8_t state = STATE_CONFIG ;
+static uint8_t state = STATE_OPEN ;
 LinType_t lin_type = LIN_MASTER;
 
 static uint8_t terminator = SLCAN_CR;
@@ -185,10 +185,14 @@ static uint8_t wakeUpLin(void)
 {
     LIN_SENDB = 1;
     LIN_EUSART_Write(0x00); //send dummy transmission
+    LIN_SENDB = 1;
+    LIN_EUSART_Write(0x00); 
+    LIN_SENDB = 1;
+    LIN_EUSART_Write(0x00); 
+
 }
 
-//ID0 ID1 LEN0 
-static uint8_t addLinMasterRow(uint8_t* line, bool resetTable) {
+static uint8_t addLinMasterRow(uint8_t* line, bool send_data ,bool resetTable) {
     uint32_t temp;
     lin_cmd_packet_t pck;
     
@@ -199,15 +203,14 @@ static uint8_t addLinMasterRow(uint8_t* line, bool resetTable) {
     }
     
     // id
-    if (!parseHex(&line[1], 2, &temp)) return 0;
+    if (!parseHex(&line[2], 2, &temp)) return 0;
     pck.cmd = temp; // add parity
     // len
-    if (!parseHex(&line[3], 1, &temp)) return 0;
+    if (!parseHex(&line[4], 1, &temp)) return 0;
     pck.length = temp;
     if (pck.length > 8) return 0;
     // type
-    if (!parseHex(&line[4], 1, &temp)) return 0;
-    pck.type = temp;
+    pck.type = !send_data;
     // data
     pck.data = (uint8_t*)(LIN_Master_Data + scheduleLength * sizeof(lin_cmd_packet_t));
     // period
@@ -227,7 +230,6 @@ static uint8_t addLinMasterRow(uint8_t* line, bool resetTable) {
     }
         
     LIN_Master_Set_Table_Row(&pck);
-//    LIN_Master_Set_Table_Row(&pck);
      
     scheduleLength ++;
     return 1;
@@ -243,22 +245,23 @@ static uint8_t transmitStd(uint8_t* line, bool lin_header, bool lin_data) {
     lin_packet_t pck;
     
     // id
-    if (!parseHex(&line[1], 2, &temp)) return 0;
+    if (!parseHex(&line[1], 3, &temp)) return 0;
         pck.PID = LIN_calcParity(temp); // add parity
     // len
-    if (!parseHex(&line[3], 1, &temp)) return 0;
+    if (!parseHex(&line[4], 1, &temp)) return 0;
     pck.length = temp;
     
     if (pck.length > 8) return 0;
-
-    uint8_t i;
-    for (i = 0; i < pck.length; i++) {
-        if (!parseHex(&line[4 + i*2], 2, &temp)) return 0;
-        pck.data[i] = temp;
+    if (lin_data)
+    {
+        uint8_t i;
+        for (i = 0; i < pck.length; i++) {
+            if (!parseHex(&line[5 + i*2], 2, &temp)) return 0;
+            pck.data[i] = temp;
+        }
+        //Add Checksum
+        pck.checksum = LIN_getChecksum(pck.length,pck.PID, pck.data);
     }
-    //Add Checksum
-    pck.checksum = LIN_getChecksum(pck.length,pck.PID, pck.data);
-  
     LIN_disableRx();  
     LIN_sendHeaderPacket(pck, lin_header, lin_data);
     LIN_enableRx();
@@ -323,30 +326,30 @@ void slCanCheckCommand()
                 result = terminator;
             }
             break;
-        case 'o':
-        case 'O': // Open LIN channel
-            result = terminator;
-            state = STATE_OPEN;
+        case 'o':  // master mode
+        case 'O': 
+//            if (state == STATE_CONFIG) 
+            {
+                lin_type = LIN_MASTER;
+                result = terminator;
+            }
             break;
-        case 'l': // Slave mode
+        case 'L': // Slave mode
+        case 'l': 
             if (state == STATE_CONFIG) 
             {
                 LIN_Slave_Initialize();
                 result = terminator;
                 lin_type = LIN_SLAVE;
+                state = STATE_OPEN; 
             }
             break;
-        case 'L': // master mode
-            if (state == STATE_CONFIG) 
-            {
-                LIN_Master_init();
-                result = terminator;
-                lin_type = LIN_MASTER;
-            }
-            break;
+
         case 'C': // Close LIN channel
-            state = STATE_CONFIG;
+//            state = STATE_CONFIG;
             result = terminator;
+            lin_type = LIN_MASTER;
+//            addLinMasterRow(line,false,true);
             break;
         case 'r': // Transmit header
         case 'R': 
@@ -354,9 +357,10 @@ void slCanCheckCommand()
             {
                 if (state == STATE_CONFIG)
                 {
-                    addLinMasterRow(line,true);
-                    slcanSetOutputChar('z');
-                    result = terminator;
+                    addLinMasterRow(line,false,false);
+                    if (line[0] < 'Z') slcanSetOutputChar('Z');
+                        else slcanSetOutputChar('z');
+                        result = terminator;
                 }
             } else 
             {
@@ -376,7 +380,7 @@ void slCanCheckCommand()
             {
                 if (state == STATE_CONFIG) 
                 {
-                    if (addLinMasterRow(line,false) == HAL_OK)
+                    if (addLinMasterRow(line,true,false) == HAL_OK)
                     {
                         slcanSetOutputChar('z');
                         result = terminator;
@@ -402,10 +406,22 @@ void slCanCheckCommand()
             break;
          case 'Z': // Call wakeup
             {
-                if (state == STATE_OPEN)
+                slcanSetOutputChar('z');
+                result = terminator;
+                if (lin_type == LIN_MASTER)
                 {
-                    wakeUpLin();
-                     result = terminator;
+                    LIN_Master_init();
+                    
+                    state = STATE_OPEN;
+                    if (lin_type == LIN_MASTER){
+                        wakeUpLin();
+                    }
+                } else {
+                    if (state == STATE_OPEN)
+                    {
+                        wakeUpLin();
+                         result = terminator;
+                    }
                 }
                 break;
             }
@@ -439,7 +455,7 @@ uint8_t slcanReciveCanFrame(sl_lin_packet_t *pRxMsg, uint8_t prefix)
     pid.rawPID = pRxMsg->PID;
     pid.P0 = 0;
     pid.P1 = 0;
-    
+    slCanSendNibble(0); // for slcan compatibility
     slcanSetOutputAsHex(pid.rawPID);
 	slCanSendNibble(pRxMsg->length);
 	if (pRxMsg->length > 0)

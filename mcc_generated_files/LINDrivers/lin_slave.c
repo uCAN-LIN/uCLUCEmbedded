@@ -180,11 +180,11 @@ LIN_PACKET_TOTAL:
                 if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
                     DBG("^");
                     LIN_rxState = LIN_RX_ERROR;
-                    slcanReciveCanFrame(&LIN_packet, 't');
+                    slcanReciveCanFrame(&LIN_packet, 'T');
                 } else {
                     DBG("&");
                     LIN_rxState = LIN_RX_ERROR;
-                    slcanReciveCanFrame(&LIN_packet, 'T');
+                    slcanReciveCanFrame(&LIN_packet, 't');
                 }  
             }
             }
@@ -195,11 +195,11 @@ LIN_PACKET_TOTAL:
                 LIN_packet.checksum = LIN_EUSART_Read();
                 if (LIN_packet.checksum != LIN_getChecksum(LIN_packet.length, LIN_packet.PID, LIN_packet.data)) {
                     LIN_rxState = LIN_RX_ERROR;
-                    slcanReciveCanFrame(&LIN_packet, 't');
+                    slcanReciveCanFrame(&LIN_packet, 'T');
                     DBG("(");
                 } else {
                     LIN_rxState = LIN_RX_ERROR;
-                    slcanReciveCanFrame(&LIN_packet, 'T');
+                    slcanReciveCanFrame(&LIN_packet, 't');
                 }
             }
             break;

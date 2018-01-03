@@ -62,8 +62,8 @@
 
 //Device Timer
 #define LIN_WriteTimer          TMR0_WriteTimer
-#define LIN_StartTimer          NOP
-#define LIN_StopTimer           NOP
+#define LIN_StartTimer          TMR0_Start
+#define LIN_StopTimer           TMR0_Stop
 #define LIN_SetInterruptHandler TMR0_SetInterruptHandler
 
 

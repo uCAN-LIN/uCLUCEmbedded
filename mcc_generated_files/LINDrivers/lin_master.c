@@ -41,14 +41,13 @@
 #include "lin_hardware.h"
 #include "lin_app.h"
 #include "../../slcan/slcan.h"
+#include "../../mcc_generated_files/usb/usb_device_cdc.h"
 
 static lin_packet_t LIN_packet;
 static bool LIN_timerRunning = false;
 static lin_rxpacket_t LIN_rxPacket;
 bool LIN_txReady = false;
 lin_cmd_packet_t* schedule;
-
-
 
 static uint8_t LIN_timeout = 10;
 static uint8_t LIN_period = 0;
@@ -57,13 +56,11 @@ static bool LIN_enablePeriodTx = false;
 static volatile uint8_t LIN_timerCallBack = 0;
 static volatile uint8_t LIN_periodCallBack = 0;
 
-uint8_t scheduleLength = 1;
-uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT] = {5,4,0,0,0,0,0};
+uint8_t scheduleLength = 2;
+uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT] = {0,0x0FE,0,0,0,0,0};
 lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT] = {
-    {1, MASTER_TRANSMIT, 2, 10, 400, LIN_Master_Data},
-//    {2, MASTER_RECEIVE, 2, 400, 100, &LIN_Master_Data[4]},
-//    {3, MASTER_TRANSMIT, 2, 10, 400, LIN_Master_Data},
-//    {4, MASTER_TRANSMIT, 2, 10, 400, LIN_Master_Data}
+    {0x36, MASTER_RECEIVE, 8, 125, 125, &LIN_Master_Data[16]},
+    {0x34, MASTER_RECEIVE, 8, 225, 225, &LIN_Master_Data[8]}
 };
 
 static void LIN_Master_startTimer(uint8_t timeout) {
@@ -73,12 +70,25 @@ static void LIN_Master_startTimer(uint8_t timeout) {
     LIN_timerRunning = true;
 }
 
+void M_DBG(const char *x)
+{
+    while(!USBUSARTIsTxTrfReady())
+    {
+       CDCTxService();   
+    }
+    putrsUSBUSART(x);
+    CDCTxService();   
+    while(!USBUSARTIsTxTrfReady())
+    {
+       CDCTxService();   
+    }
+}
+
 void LIN_Master_stopTimer(void) {
     LIN_StopTimer();
     // reset ticker counter
     LIN_timerRunning = false;
 }
-
 
 void LIN_Master_init(){
     schedule = scheduleTable;
@@ -93,6 +103,7 @@ void LIN_Master_Set_Table_Row(void *pck)
 {
     memcpy(&(scheduleTable[scheduleLength]),pck,sizeof(lin_cmd_packet_t));
 }
+
 //void LIN_Master_Set_Table_Row(lin_cmd_packet_t* pck)
 //{
 //    memcpy(&(scheduleTable[scheduleLength]),pck,sizeof(lin_cmd_packet_t));
@@ -144,30 +155,28 @@ lin_state_t LIN_Master_handler(void){
     switch(LIN_state){
         case LIN_IDLE:
             if(LIN_txReady == true){
+                LIN_stopPeriod();
                 LIN_txReady = false;
                 LIN_disableRx();   //disable EUSART rx
                 //Send Transmission
                 LIN_sendMasterPacket();
                 memset(LIN_packet.rawPacket, 0, sizeof(LIN_packet.rawPacket));  //clear send data
                 LIN_state = LIN_TX_IP;
-            } else {
-                //No Transmission to send
+            } else {//No Transmission to send
+                LIN_startPeriod();
+                break;
             }
-            break;
         case LIN_TX_IP:
             //Transmission currently in progress.
-            if(LIN_TXIE == 0){
-                if(LIN_TRMT == 1){
-                    //Packet transmitted
-                    if(LIN_rxPacket.rxLength > 0){
-                        //Need data returned?
-                        LIN_Master_startTimer(LIN_rxPacket.timeout);
-                        LIN_enableRx();   //enable EUSART rx
-                        LIN_state = LIN_RX_IP;
-                    } else {
-                        LIN_state = LIN_IDLE;
-                    }
-                }
+            while (LIN_TRMT == 0);
+            //Packet transmitted
+            if(LIN_rxPacket.rxLength > 0){
+                //Need data returned?
+                LIN_Master_startTimer(LIN_rxPacket.timeout);
+                LIN_enableRx();   //enable EUSART rx
+                LIN_state = LIN_RX_IP;
+            } else {
+                LIN_state = LIN_IDLE;
             }
             break;
         case LIN_RX_IP:
@@ -177,11 +186,13 @@ lin_state_t LIN_Master_handler(void){
                 LIN_state = LIN_IDLE;
                 memset(LIN_rxPacket.rawPacket, 0, sizeof(LIN_rxPacket.rawPacket));  //clear receive data
             } else 
+            {
                 if(LIN_EUSART_DataReady){
-                if(LIN_receivePacket() == true){
-                    //All data received and verified
-                    LIN_disableRx();   //disable EUSART rx
-                    LIN_state = LIN_MASTER_RX_RDY;
+                    if(LIN_receivePacket() == true){
+                        //All data received and verified
+                        LIN_disableRx();   //disable EUSART rx
+                        LIN_state = LIN_MASTER_RX_RDY;
+                    }
                 }
             }
             break;
@@ -193,7 +204,7 @@ lin_state_t LIN_Master_handler(void){
                 lf.length = LIN_rxPacket.rxLength;
                 memcpy(lf.data,LIN_rxPacket.data,lf.length);
                 
-                slcanReciveCanFrame(&lf, 'M');
+                slcanReciveCanFrame(&lf, 't');
                 LIN_state = LIN_IDLE;
             }
             break;
@@ -228,7 +239,7 @@ void LIN_sendMasterPacket(void){
     LIN_EUSART_Write(0x55);
     //Add ID
     LIN_EUSART_Write(LIN_packet.PID);
-
+    
     if(LIN_rxPacket.rxLength == 0){ //not receiving data
         //Build Packet - User defined data
         //add data
@@ -239,8 +250,6 @@ void LIN_sendMasterPacket(void){
         LIN_EUSART_Write(LIN_packet.checksum);
     }
 }
-
-
 
 void LIN_Master_timerHandler(void){
 
@@ -263,6 +272,7 @@ void LIN_Master_setTimerHandler(void){
 }
 
 void LIN_startPeriod(void){
+    LIN_StartTimer();
     LIN_enablePeriodTx = true;
 }
 
@@ -278,8 +288,12 @@ void LIN_sendPeriodicTx(void){
     
     LIN_periodCallBack = 0;
     periodicTx = schedule + scheduleIndex;
-    
+        
     if(periodicTx->period > 0){
+        
+        M_DBG("^");
+//        M_DBG("\n");
+        
         LIN_Master_queuePacket(periodicTx->cmd, periodicTx->data);
     }
     

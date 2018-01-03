@@ -274,6 +274,9 @@ extern void (*TMR0_InterruptHandler)(void);
 */
 void TMR0_DefaultInterruptHandler(void);
 
+void TMR0_Stop(void);
+void TMR0_Start(void);
+
 #ifdef __cplusplus  // Provide C++ Compatibility
 
     }

@@ -60,6 +60,14 @@ void (*TMR0_InterruptHandler)(void);
   Section: TMR0 APIs
 */
 
+void TMR0_Stop(void){
+     OPTION_REGbits.TMR0CS = 1;
+}
+
+void TMR0_Start(void){
+     OPTION_REGbits.TMR0CS = 0;
+}
+
 void TMR0_Initialize(void)
 {
     // Set TMR0 to the options selected in the User Interface
