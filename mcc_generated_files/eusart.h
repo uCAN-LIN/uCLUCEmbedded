@@ -222,6 +222,7 @@ void EUSART_Receive_ISR(void);
 
 void EUSART_Restart(void);
 
+bool EUSART_TX_Complete(void);
 #ifdef __cplusplus  // Provide C++ Compatibility
 
     }

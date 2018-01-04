@@ -134,5 +134,7 @@ void LIN_disableRx(void);
 
 bool LIN_breakCheck(void);
 
+void DBG(const char *x);
+
 #endif	/* LIN_H */
 

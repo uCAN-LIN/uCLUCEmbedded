@@ -195,7 +195,8 @@ static uint8_t wakeUpLin(void)
 static uint8_t addLinMasterRow(uint8_t* line, bool send_data ,bool resetTable) {
     uint32_t temp;
     lin_cmd_packet_t pck;
-    
+    uint16_t tFrame_Max_ms;
+     
     if (resetTable)
     {
         scheduleLength = 0;
@@ -204,27 +205,39 @@ static uint8_t addLinMasterRow(uint8_t* line, bool send_data ,bool resetTable) {
     
     // id
     if (!parseHex(&line[2], 2, &temp)) return 0;
+    if (temp == 0xFF)
+    {
+        LIN_Master_init();               
+        state = STATE_OPEN;
+        if (lin_type == LIN_MASTER){
+            wakeUpLin();
+        }
+        return 1;
+    }
     pck.cmd = temp; // add parity
     // len
     if (!parseHex(&line[4], 1, &temp)) return 0;
     pck.length = temp;
     if (pck.length > 8) return 0;
+     
     // type
     pck.type = !send_data;
     // data
     pck.data = (uint8_t*)(LIN_Master_Data + scheduleLength * sizeof(lin_cmd_packet_t));
     // period
-    if (!parseHex(&line[5], 2, &temp)) return 0;
-    pck.period = temp;
+    
+//    if (!parseHex(&line[5], 2, &temp)) return 0;
+    pck.timeout = 15;
     // timeout
-    if (!parseHex(&line[7], 2, &temp)) return 0;
-    pck.timeout = temp;
+//    if (!parseHex(&line[7], 2, &temp)) return 0;
+    tFrame_Max_ms = (((uint16_t)pck.length * 10 + 44) * 7 / 100) + 1;
+    pck.period = (uint8_t)(tFrame_Max_ms) + pck.timeout;
     
     if (pck.type == MASTER_TRANSMIT)
     {
         for (uint8_t i = 0; i < pck.length; i++)
         {
-            if (!parseHex(&line[7+i*2], 2, &temp)) return 0;
+            if (!parseHex(&line[5+i*2], 2, &temp)) return 0;
             pck.data[i] = temp;
         }
     }
@@ -328,7 +341,7 @@ void slCanCheckCommand()
             break;
         case 'o':  // master mode
         case 'O': 
-//            if (state == STATE_CONFIG) 
+            if (state == STATE_CONFIG) 
             {
                 lin_type = LIN_MASTER;
                 result = terminator;
@@ -346,10 +359,10 @@ void slCanCheckCommand()
             break;
 
         case 'C': // Close LIN channel
-//            state = STATE_CONFIG;
+            state = STATE_CONFIG;
             result = terminator;
             lin_type = LIN_MASTER;
-//            addLinMasterRow(line,false,true);
+            addLinMasterRow(line,false,true);
             break;
         case 'r': // Transmit header
         case 'R': 
@@ -405,26 +418,6 @@ void slCanCheckCommand()
             }
             break;
          case 'Z': // Call wakeup
-            {
-                slcanSetOutputChar('z');
-                result = terminator;
-                if (lin_type == LIN_MASTER)
-                {
-                    LIN_Master_init();
-                    
-                    state = STATE_OPEN;
-                    if (lin_type == LIN_MASTER){
-                        wakeUpLin();
-                    }
-                } else {
-                    if (state == STATE_OPEN)
-                    {
-                        wakeUpLin();
-                         result = terminator;
-                    }
-                }
-                break;
-            }
             break;
          case 'b':
 //        	 RebootToBootloader();

@@ -52,6 +52,7 @@
 #define LIN_EUSART_Read         EUSART_Read
 #define LIN_EUSART_Write        EUSART_Write
 #define LIN_EUSART_Restart      EUSART_Restart
+#define LIN_EUSART_Tx_Complete  EUSART_TX_Complete
 #define LIN_TXIE                TXIE
 #define LIN_RCIE                RCIE
 
@@ -62,8 +63,8 @@
 
 //Device Timer
 #define LIN_WriteTimer          TMR0_WriteTimer
-#define LIN_StartTimer          TMR0_Start
-#define LIN_StopTimer           TMR0_Stop
+#define LIN_StartTimer          NOP
+#define LIN_StopTimer           NOP
 #define LIN_SetInterruptHandler TMR0_SetInterruptHandler
 
 

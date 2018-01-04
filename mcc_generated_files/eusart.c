@@ -202,6 +202,13 @@ void EUSART_Transmit_ISR(void)
     }
 }
 
+bool EUSART_TX_Complete(void)
+{
+    if ((eusartTxBufferRemaining == sizeof(eusartTxBuffer)) && (TXSTAbits.TRMT == 1))
+        return true;
+    return false;
+}
+
 void EUSART_Receive_ISR(void)
 {
 
