@@ -92,13 +92,28 @@ void LIN_Master_init(){
 
 void LIN_Master_Set_Table_Row(void *pck)
 {
-    memcpy(&(scheduleTable[scheduleLength]),pck,sizeof(lin_cmd_packet_t));
+    int8_t i; 
+    int8_t s = -1; 
+    
+    for (i = 0; i < scheduleLength; i++)
+    {
+        if (scheduleTable[i].cmd == ((lin_cmd_packet_t*)pck)->cmd)
+        {
+            s = i;
+            break;
+        }
+    }
+    
+    if (s == -1)
+    {
+        memcpy(&(scheduleTable[scheduleLength]),pck,sizeof(lin_cmd_packet_t));
+        scheduleLength ++;
+    } else 
+    {
+       memcpy(&(scheduleTable[s]),pck,sizeof(lin_cmd_packet_t)); 
+    }
+    
 }
-
-//void LIN_Master_Set_Table_Row(lin_cmd_packet_t* pck)
-//{
-//    memcpy(&(scheduleTable[scheduleLength]),pck,sizeof(lin_cmd_packet_t));
-//}
 
 void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data){
     const lin_cmd_packet_t* tempSchedule = schedule;    //copy table pointer so we can modify it

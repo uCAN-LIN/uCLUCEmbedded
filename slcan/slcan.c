@@ -192,21 +192,20 @@ static uint8_t wakeUpLin(void)
 
 }
 
-static uint8_t addLinMasterRow(uint8_t* line, bool send_data ,bool resetTable) {
+static uint8_t addLinMasterRow(uint8_t* line) {
     uint32_t temp;
     lin_cmd_packet_t pck;
     uint16_t tFrame_Max_ms;
      
-    if (resetTable)
+    // reset schedule table
+    if (line[1] == '2')
     {
         scheduleLength = 0;
-        return 0;
+        return 1;
     }
     
-    // id
-    if (!parseHex(&line[2], 2, &temp)) return 0;
-    if (temp == 0xFF)
-    {
+    // start sending
+    if (line[1] == '1'){
         LIN_Master_init();               
         state = STATE_OPEN;
         if (lin_type == LIN_MASTER){
@@ -214,14 +213,18 @@ static uint8_t addLinMasterRow(uint8_t* line, bool send_data ,bool resetTable) {
         }
         return 1;
     }
+    
+    // id
+    if (!parseHex(&line[2], 2, &temp)) return 0;
     pck.cmd = temp; // add parity
+    
     // len
     if (!parseHex(&line[4], 1, &temp)) return 0;
     pck.length = temp;
     if (pck.length > 8) return 0;
      
     // type
-    pck.type = !send_data;
+    pck.type = ((line[0] == 'r') || (line[0] == 'R'));
     // data
     pck.data = (uint8_t*)(LIN_Master_Data + scheduleLength * sizeof(lin_cmd_packet_t));
     // period
@@ -244,7 +247,7 @@ static uint8_t addLinMasterRow(uint8_t* line, bool send_data ,bool resetTable) {
         
     LIN_Master_Set_Table_Row(&pck);
      
-    scheduleLength ++;
+   
     return 1;
 }
 
@@ -362,19 +365,15 @@ void slCanCheckCommand()
             state = STATE_CONFIG;
             result = terminator;
             lin_type = LIN_MASTER;
-            addLinMasterRow(line,false,true);
             break;
         case 'r': // Transmit header
         case 'R': 
             if (lin_type == LIN_MASTER)
             {
-                if (state == STATE_CONFIG)
-                {
-                    addLinMasterRow(line,false,false);
-                    if (line[0] < 'Z') slcanSetOutputChar('Z');
-                        else slcanSetOutputChar('z');
-                        result = terminator;
-                }
+                addLinMasterRow(line);
+                if (line[0] < 'Z') slcanSetOutputChar('Z');
+                    else slcanSetOutputChar('z');
+                    result = terminator;
             } else 
             {
                 if (state == STATE_OPEN)
@@ -391,13 +390,10 @@ void slCanCheckCommand()
         case 'T': 
             if (lin_type == LIN_MASTER)
             {
-                if (state == STATE_CONFIG) 
+                if (addLinMasterRow(line) == HAL_OK)
                 {
-                    if (addLinMasterRow(line,true,false) == HAL_OK)
-                    {
-                        slcanSetOutputChar('z');
-                        result = terminator;
-                    }
+                    slcanSetOutputChar('z');
+                    result = terminator;
                 }
             } else 
             {
