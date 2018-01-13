@@ -22,16 +22,10 @@
 #define HAL_OK 1
 
 const int32_t serialNumber = 5;
-// internal slcan_interface state
-
-static uint8_t timestamping = 0;
-
-static uint8_t state = STATE_OPEN ;
+static uint8_t state = STATE_OPEN;
 LinType_t lin_type = LIN_MASTER;
 
 static uint8_t terminator = SLCAN_CR;
-
-extern lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT];
 
 uint8_t sl_frame[LINE_MAXLEN];
 uint8_t sl_frame_len=0;
@@ -228,11 +222,8 @@ static uint8_t addLinMasterRow(uint8_t* line) {
     // data
     pck.data = (uint8_t*)(LIN_Master_Data + scheduleLength * sizeof(lin_cmd_packet_t));
     // period
-    
-//    if (!parseHex(&line[5], 2, &temp)) return 0;
     pck.timeout = 15;
     // timeout
-//    if (!parseHex(&line[7], 2, &temp)) return 0;
     tFrame_Max_ms = (((uint16_t)pck.length * 10 + 44) * 7 / 100) + 1;
     pck.period = (uint8_t)(tFrame_Max_ms) + pck.timeout;
     
@@ -246,8 +237,6 @@ static uint8_t addLinMasterRow(uint8_t* line) {
     }
         
     LIN_Master_Set_Table_Row(&pck);
-     
-   
     return 1;
 }
 
@@ -291,7 +280,6 @@ static uint8_t transmitStd(uint8_t* line, bool lin_header, bool lin_data) {
  * @param  line Line string to parse
  * @retval None
  */
-//void RebootToBootloader();
 void slCanCheckCommand()
 {
 	uint8_t result = SLCAN_BELL;
@@ -314,7 +302,8 @@ void slCanCheckCommand()
         case 'G': 
         case 'W':
         case 's': 
-			result = terminator;
+        case 'F': // Read status flags
+      		result = terminator;
             break;
         case 'V': // Get hardware version
             {
@@ -407,18 +396,6 @@ void slCanCheckCommand()
                 }
             }
             break;
-        case 'F': // Read status flags
-            {
-                slcanSetOutputChar('F');
-                result = terminator;
-            }
-            break;
-         case 'Z': // Call wakeup
-            break;
-         case 'b':
-//        	 RebootToBootloader();
-        	 break;
-
     }
    line[0] = 0;
    slcanSetOutputChar(result);

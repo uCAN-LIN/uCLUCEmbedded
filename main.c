@@ -51,9 +51,9 @@
                          Main application
  */
 
+static uint8_t buffer[LINE_MAXLEN];
 void UserApplication(void)
 {
-    static uint8_t buffer[LINE_MAXLEN];
     uint8_t numBytes;
     
     slCanHandler();

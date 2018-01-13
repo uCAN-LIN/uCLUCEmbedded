@@ -47,7 +47,6 @@ static lin_packet_t LIN_packet @ 0x80;
 static bool LIN_timerRunning = false;
 static lin_rxpacket_t LIN_rxPacket;
 bool LIN_txReady = false;
-lin_cmd_packet_t* schedule;
 
 static uint8_t LIN_timeout = 10;
 static uint8_t LIN_period = 0;
@@ -57,11 +56,8 @@ static volatile uint8_t LIN_timerCallBack = 0;
 static volatile uint8_t LIN_periodCallBack = 0;
 
 uint8_t scheduleLength = 0;
-uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT] = {0,0x0FE,0,0,0,0,0};
-lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT] = {
-    {0x36, MASTER_RECEIVE, 8, 15, 25, &LIN_Master_Data[16]},
-    {0x34, MASTER_RECEIVE, 8, 15, 25, &LIN_Master_Data[8]}
-};
+volatile uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT] @ 0x500;
+lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT]  @ 0x300;
 
 static void LIN_Master_startTimer(uint8_t timeout) {
     LIN_timeout = timeout;
@@ -69,23 +65,7 @@ static void LIN_Master_startTimer(uint8_t timeout) {
     LIN_timerRunning = true;
 }
 
-void M_DBG(const char *x)
-{
-    while(!USBUSARTIsTxTrfReady())
-    {
-       CDCTxService();   
-    }
-    putrsUSBUSART(x);
-    CDCTxService();   
-    while(!USBUSARTIsTxTrfReady())
-    {
-       CDCTxService();   
-    }
-}
-
 void LIN_Master_init(){
-    schedule = scheduleTable;
-    
     LIN_Master_setTimerHandler();
     LIN_startPeriod();
 }
@@ -116,7 +96,7 @@ void LIN_Master_Set_Table_Row(void *pck)
 }
 
 void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data){
-    const lin_cmd_packet_t* tempSchedule = schedule;    //copy table pointer so we can modify it
+    const lin_cmd_packet_t* tempSchedule = scheduleTable;    //copy table pointer so we can modify it
 
     for(uint8_t i = 0; i < scheduleLength; i++){
         if(cmd == tempSchedule->cmd){
@@ -291,7 +271,7 @@ void LIN_sendPeriodicTx(void){
     const lin_cmd_packet_t* periodicTx;    //copy table pointer so we can modify it
     
     LIN_periodCallBack = 0;
-    periodicTx = schedule + scheduleIndex;
+    periodicTx = scheduleTable + scheduleIndex;
         
     if(periodicTx->period > 0){      
         LIN_Master_queuePacket(periodicTx->cmd, periodicTx->data);
@@ -301,7 +281,7 @@ void LIN_sendPeriodicTx(void){
         if(++scheduleIndex >= scheduleLength){
             scheduleIndex = 0;
         }
-        periodicTx = schedule + scheduleIndex;
+        periodicTx = scheduleTable + scheduleIndex;
     } while(periodicTx->period == 0);
     
     LIN_period = periodicTx->period;

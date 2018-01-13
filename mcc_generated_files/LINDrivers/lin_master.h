@@ -44,7 +44,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define MAX_LIN_SLAVE_COUNT 15u
+#define MAX_LIN_SLAVE_COUNT 12u
 
 typedef enum {
     LIN_IDLE,
@@ -142,7 +142,7 @@ void LIN_sendPeriodicTx(void);
 void LIN_Master_Set_Table_Row(void *pck);
 
 extern uint8_t scheduleLength;
-extern uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
+extern volatile uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
 
 #endif	/* LIN_MASTER_H */
 
