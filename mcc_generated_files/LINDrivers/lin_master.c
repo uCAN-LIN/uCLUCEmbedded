@@ -144,7 +144,7 @@ lin_state_t LIN_Master_handler(void){
                 LIN_txReady = false;
                 LIN_disableRx();   //disable EUSART rx
                 //Send Transmission
-                memset(LIN_packet.rawPacket, 0, sizeof(LIN_packet.rawPacket));  //clear send data
+//                memset(LIN_packet.rawPacket, 0, sizeof(LIN_packet.rawPacket));  //clear send data
                 LIN_state = LIN_TX_IP;
                 LIN_sendMasterPacket();
             } else {//No Transmission to send
