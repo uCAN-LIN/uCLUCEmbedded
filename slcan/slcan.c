@@ -185,7 +185,7 @@ static uint8_t wakeUpLin(void)
     LIN_EUSART_Write(0x00); 
 
 }
-
+extern void EUSART_Restart(void);
 static uint8_t addLinMasterRow(uint8_t* line) {
     uint32_t temp;
     lin_cmd_packet_t pck;
@@ -194,6 +194,8 @@ static uint8_t addLinMasterRow(uint8_t* line) {
     // reset schedule table
     if (line[1] == '2')
     {
+        EUSART_Restart();
+        state = STATE_CONFIG;
         scheduleLength = 0;
         return 1;
     }
