@@ -64,11 +64,6 @@ static void slcanSetOutputAsHex(uint8_t ch) {
 	slCanSendNibble(ch & 0x0F);
 }
 
-void slcanClose()
-{
-	state = STATE_CONFIG;
-}
-
 static void slcanOutputFlush(void)
 {
     
