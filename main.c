@@ -52,23 +52,6 @@
  */
 
 static uint8_t buffer[LINE_MAXLEN];
-void UserApplication(void)
-{
-    uint8_t numBytes;
-    
-    slCanHandler();
-    numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
-    if(numBytes > 0)
-    {
-        for (uint8_t i = 0; i < numBytes; i++)
-        {
-            if (slCanProccesInput(buffer[i]))
-            {
-                slCanCheckCommand();
-            }
-        }
-    }
-}
 
 extern LinType_t lin_type; 
 
@@ -102,7 +85,22 @@ void main(void)
             //Keep trying to send data to the PC as required
             CDCTxService();
             //Run application code.
-            UserApplication();
+            {
+                uint8_t numBytes;
+
+                slCanHandler();
+                numBytes = getsUSBUSART(buffer,sizeof(buffer)); //until the buffer is free.
+                if(numBytes > 0)
+                {
+                    for (uint8_t i = 0; i < numBytes; i++)
+                    {
+                        if (slCanProccesInput(buffer[i]))
+                        {
+                            slCanCheckCommand();
+                        }
+                    }
+                }
+            }
         }
     }
 }
