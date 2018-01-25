@@ -182,8 +182,9 @@ static uint8_t wakeUpLin(void)
 }
 extern void EUSART_Restart(void);
 static uint8_t addLinMasterRow(uint8_t* line) {
-    uint32_t temp;
-    lin_cmd_packet_t pck;
+    uint32_t temp;    
+    int8_t i,s;         
+    lin_cmd_packet_t* array_ptr = 0;
     uint16_t tFrame_Max_ms;
      
     // reset schedule table
@@ -207,33 +208,33 @@ static uint8_t addLinMasterRow(uint8_t* line) {
     
     // id
     if (!parseHex(&line[2], 2, &temp)) return 0;
-    pck.cmd = temp; // add parity
+    s = LIN_Master_Get_Table_Row(temp, &array_ptr);
     
+    array_ptr->cmd = temp; 
     // len
     if (!parseHex(&line[4], 1, &temp)) return 0;
-    pck.length = temp;
-    if (pck.length > 8) return 0;
+    array_ptr->length = temp;
+    if (array_ptr->length > 8) return 0;
      
     // type
-    pck.type = ((line[0] == 'r') || (line[0] == 'R'));
+    array_ptr->type = (line[0] == 'r');
     // data
-    pck.data = (uint8_t*)(LIN_Master_Data + scheduleLength * sizeof(lin_cmd_packet_t));
+    array_ptr->data = &(LIN_Master_Data[s * 8]); //data is later set in case of override
     // period
-    pck.timeout = 15;
+    array_ptr->timeout = 15;
     // timeout
-    tFrame_Max_ms = (((uint16_t)pck.length * 10 + 44) * 7 / 100) + 1;
-    pck.period = (uint8_t)(tFrame_Max_ms) + pck.timeout;
+    tFrame_Max_ms = (((uint16_t)array_ptr->length * 10 + 44) * 7 / 100) + 1;
+    array_ptr->period = (uint8_t)(tFrame_Max_ms) + array_ptr->timeout;
     
-    if (pck.type == MASTER_TRANSMIT)
+    if (array_ptr->type == MASTER_TRANSMIT)
     {
-        for (uint8_t i = 0; i < pck.length; i++)
+        for (i = 0; i < array_ptr->length; i++)
         {
             if (!parseHex(&line[5+i*2], 2, &temp)) return 0;
-            pck.data[i] = temp;
+            array_ptr->data[i] = temp;
         }
     }
-        
-    LIN_Master_Set_Table_Row(&pck);
+    
     return 1;
 }
 
@@ -352,14 +353,16 @@ void slCanCheckCommand()
             result = terminator;
             lin_type = LIN_MASTER;
             break;
-        case 'r': // Transmit header
+            
         case 'R': 
+            break;  
+        case 'r': // Transmit header
+
             if (lin_type == LIN_MASTER)
             {
                 addLinMasterRow(line);
-                if (line[0] < 'Z') slcanSetOutputChar('Z');
-                    else slcanSetOutputChar('z');
-                    result = terminator;
+                slcanSetOutputChar('z');
+                result = terminator;
             } else 
             {
                 if (state == STATE_OPEN)
@@ -372,15 +375,15 @@ void slCanCheckCommand()
                 }   
             }
             break;
-        case 't': // Transmit full frame
         case 'T': 
+            break;
+        case 't': // Transmit full frame
+        
             if (lin_type == LIN_MASTER)
             {
-                if (addLinMasterRow(line) == HAL_OK)
-                {
-                    slcanSetOutputChar('z');
-                    result = terminator;
-                }
+                addLinMasterRow(line);
+                slcanSetOutputChar('z');
+                result = terminator;
             } else 
             {
                 if (state == STATE_OPEN)

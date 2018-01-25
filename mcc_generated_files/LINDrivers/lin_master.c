@@ -43,7 +43,7 @@
 #include "../../slcan/slcan.h"
 #include "../../mcc_generated_files/usb/usb_device_cdc.h"
 
-static lin_packet_t LIN_packet @ 0x80;
+lin_packet_t master_LIN_packet;
 static bool LIN_timerRunning = false;
 static lin_rxpacket_t LIN_rxPacket;
 bool LIN_txReady = false;
@@ -56,7 +56,7 @@ static volatile uint8_t LIN_timerCallBack = 0;
 static volatile uint8_t LIN_periodCallBack = 0;
 
 uint8_t scheduleLength = 0;
-volatile uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT] @ 0x500;
+volatile uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT] @0x500 ;
 lin_cmd_packet_t scheduleTable[MAX_LIN_SLAVE_COUNT]  @ 0x300;
 
 static void LIN_Master_startTimer(uint8_t timeout) {
@@ -70,33 +70,29 @@ void LIN_Master_init(){
     LIN_startPeriod();
 }
 
-void LIN_Master_Set_Table_Row(void *pck)
+uint8_t LIN_Master_Get_Table_Row(uint8_t id, void** array_ptr)
 {
-    int8_t i; 
-    int8_t s = -1; 
-    
+    uint8_t i;
     for (i = 0; i < scheduleLength; i++)
-    {
-        if (scheduleTable[i].cmd == ((lin_cmd_packet_t*)pck)->cmd)
-        {
-            s = i;
+    {        
+        if (scheduleTable[i].cmd == id)
+        {   
+            (*array_ptr) = (void*)(&scheduleTable[i]);
             break;
         }
     }
-    
-    if (s == -1)
+    if ((*array_ptr) == 0)
     {
-        memcpy(&(scheduleTable[scheduleLength]),pck,sizeof(lin_cmd_packet_t));
+        i = scheduleLength;
+        (*array_ptr) = (void*)(&(scheduleTable[scheduleLength]));
         scheduleLength ++;
-    } else 
-    {
-       memcpy(&(scheduleTable[s]),pck,sizeof(lin_cmd_packet_t)); 
     }
-    
+    return i;
 }
 
-void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data){
-    const lin_cmd_packet_t* tempSchedule = scheduleTable;    //copy table pointer so we can modify it
+lin_cmd_packet_t* tempSchedule = scheduleTable;    //copy table pointer so we can modify it
+void LIN_Master_queuePacket(uint8_t cmd){
+     
 
     for(uint8_t i = 0; i < scheduleLength; i++){
         if(cmd == tempSchedule->cmd){
@@ -106,21 +102,25 @@ void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data){
     }
 
     //Add ID
-    LIN_packet.PID = LIN_calcParity(tempSchedule->cmd);
+    master_LIN_packet.PID = LIN_calcParity(tempSchedule->cmd);
 
     if(tempSchedule->type == MASTER_TRANSMIT){
         //Build Packet - User defined data
         //add data
+        LIN_rxPacket.rxLength = 0;
         if(tempSchedule->length > 0){
-            LIN_packet.length = tempSchedule->length;
-            memcpy(LIN_packet.data, data, tempSchedule->length);
+            master_LIN_packet.length = tempSchedule->length;
+            for (uint8_t i = 0; i < tempSchedule->length; i++)
+            {
+                master_LIN_packet.data[i] = tempSchedule->data[i];
+            }
         } else {
-            LIN_packet.length = 1; //send dummy byte for checksum
-            LIN_packet.data[0] = 0xAA;
+            master_LIN_packet.length = 1; //send dummy byte for checksum
+            master_LIN_packet.data[0] = 0xAA;
         }
 
         //Add Checksum
-        LIN_packet.checksum = LIN_getChecksum(LIN_packet.length,LIN_packet.PID, LIN_packet.data);
+        master_LIN_packet.checksum = LIN_getChecksum(master_LIN_packet.length,master_LIN_packet.PID, master_LIN_packet.data);
 
     } else { //Rx packet
         LIN_rxPacket.rxLength = tempSchedule->length; //data length for rx data processing
@@ -222,16 +222,16 @@ void LIN_sendMasterPacket(void){
     //Add Preamble
     LIN_EUSART_Write(0x55);
     //Add ID
-    LIN_EUSART_Write(LIN_packet.PID);
+    LIN_EUSART_Write(master_LIN_packet.PID);
     
     if(LIN_rxPacket.rxLength == 0){ //not receiving data
         //Build Packet - User defined data
         //add data
-        for(uint8_t i = 0; i < LIN_packet.length; i++){
-            LIN_EUSART_Write(LIN_packet.data[i]);
+        for(uint8_t i = 0; i < master_LIN_packet.length; i++){
+            LIN_EUSART_Write(master_LIN_packet.data[i]);
         }
         //Add Checksum
-        LIN_EUSART_Write(LIN_packet.checksum);
+        LIN_EUSART_Write(master_LIN_packet.checksum);
     }
 }
 
@@ -274,7 +274,7 @@ void LIN_sendPeriodicTx(void){
     periodicTx = scheduleTable + scheduleIndex;
         
     if(periodicTx->period > 0){      
-        LIN_Master_queuePacket(periodicTx->cmd, periodicTx->data);
+        LIN_Master_queuePacket(periodicTx->cmd);
     }
     
     do{ //Go to next valid periodic command

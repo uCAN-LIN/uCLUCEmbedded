@@ -69,16 +69,6 @@ typedef struct {
 
 typedef union {
     struct {
-        uint8_t PID;
-        uint8_t data[8];
-        uint8_t checksum;
-        uint8_t length;
-    };
-    uint8_t rawPacket[11];
-}lin_packet_t;
-
-typedef union {
-    struct {
         uint8_t cmd;
         uint8_t rxLength;
         uint8_t data[8];
@@ -106,7 +96,7 @@ typedef union {
 
 void LIN_Master_init(void);
 
-void LIN_Master_queuePacket(uint8_t cmd, uint8_t* data);
+void LIN_Master_queuePacket(uint8_t cmd);
 
 bool LIN_receivePacket(void);
 
@@ -139,7 +129,7 @@ void LIN_disableRx(void);
 
 void LIN_sendPeriodicTx(void);
 
-void LIN_Master_Set_Table_Row(void *pck);
+uint8_t LIN_Master_Get_Table_Row(uint8_t id, void** array_ptr);
 
 extern uint8_t scheduleLength;
 extern volatile uint8_t LIN_Master_Data[8 * MAX_LIN_SLAVE_COUNT];
